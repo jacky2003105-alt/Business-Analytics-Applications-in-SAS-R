@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>作業 4 財務指標的主成分分析｜商業分析：R課程筆記</title>
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css?v=113869c6">
+</head><body data-page="hw04" data-mode="hw">
+<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
+<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇單元"><option value="hw01.html">作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html">作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html" selected>作業 4　財務指標的主成分分析</option></select></div></div>
+<main class="wrap"><header class="ch-head"><h1>作業 4　財務指標的主成分分析</h1><details class="ch-toc"><summary>本頁目錄（4 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>讀入資料與事前檢查</a></li><li><a href="#s1-2"><span>1.2</span>前兩個主成分共能解釋多少變異</a></li><li><a href="#s1-3"><span>1.3</span>前三個主成分的重點變數</a></li><li><a href="#s1-4"><span>1.4</span>依第一主成分找出適合投資的公司</a></li></ol></details></header>
+<div class="ch-intro"><p>作業 4 用一百六十多間公司的 16 個財務指標，以<strong>主成分分析 PCA</strong>（並用 <strong>SPCA</strong> 輔助確認）把很多個指標濃縮成少數幾個有意義的主成分，再依第一主成分說明什麼樣的公司適合投資。用到的課堂內容：</p>
+<ul>
+<li>讀檔與檢查：<code>read_csv()</code>、<code>summary()</code>、<code>cor()</code>（<a href="ch01.html#s1-8">第 1 章 1.8</a>、<a href="ch05.html#s5-1">第 5 章 5.1</a>）</li>
+<li>PCA：<code>prcomp()</code>、<code>summary()</code>、<code>screeplot()</code>、<code>$rotation</code>、<code>biplot()</code>（<a href="ch11.html#s11-2">第 11 章 11.2</a>）</li>
+<li>SPCA：<code>nscumcomp()</code>（<a href="ch11.html#s11-3">第 11 章 11.3</a>）</li>
+</ul>
+<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個函數的地方。</p>
+<p>資料檔：<a href="data/hw04/financialdata.csv">financialdata.csv</a>。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">nsprcomp</span><span class="p">)</span>
+</code></pre></div></div><section class="sec" id="s1-1" data-label="1.1 讀入資料與事前檢查"><h2><span class="num">1.1</span>讀入資料與事前檢查</h2><details class="refbox" open><summary>對應課程內容（6 處）</summary><ul><li><a href="ch01.html#s1-8-2">第 1 章 1.8・讀 CSV：read.csv()</a>（read_csv、read.csv）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（dim、head、ncol）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（summary、sum）</li><li><a href="ch01.html#s1-9-2">第 1 章 1.9・資料框的缺失值</a>（is.na）</li><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li><li><a href="ch05.html#s5-1">第 5 章 5.1・EDA 是什麼、為什麼要做</a>（cor）</li></ul></details><div class="box task"><span class="tag">題目</span><p>資料 financialdata.csv 有 163 間公司的財務指標：comp_id（公司代號）、roe（股東權益報酬率）、roa（資產報酬率）、profit_margin_rate（營業利益率）、gross_margin_rate（營業毛利率）、expense_rate（營業費用率）、asset_turnover（資產週轉率）、inventory_turnover（存貨週轉率）、equity_turnnover（淨值週轉率）、rev_growth_rate（營收成長率）、margin_growth_rate（毛利成長率）、op_profit_growth_rate（營業利益成長率）、cash_reinv_rate（現金再投資比率）、asset_growth_rate（資產成長率）、current_ratio（流動比率）、quick_rartio（速動比率）、debt_ratio（負債比率）。</p></div>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">fin</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><span class="nf">read_csv</span></a><span class="p">(</span><span class="s">"financialdata.csv"</span><span class="p">)</span>
+<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">dim</span></a><span class="p">(</span><span class="n">fin</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 162  17</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">head</span></a><span class="p">(</span><span class="n">fin</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 6 × 17
+##   comp_id   roe   roa profit_margin_rate gross_margin_rate expense_rate
+##     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;              &lt;dbl&gt;             &lt;dbl&gt;        &lt;dbl&gt;
+## 1    2303  3.06  2.21               4.4               18.1         14.8
+## 2    2330 23.6  17.8               39.4               50.6         11.0
+## 3    2337 25.7  14.3               16.8               37.0         20.1
+## 4    2342 -3.41 -0.72               3.86              16.9         13  
+## 5    2344 10.9   7.69              14.0               34.3         20.3
+## 6    2408 37.0  28.3               34.2               44.9         10.7
+## # ℹ 11 more variables: asset_turnover &lt;dbl&gt;, inventory_turnover &lt;dbl&gt;,
+## #   equity_turnnover &lt;dbl&gt;, rev_growth_rate &lt;dbl&gt;,
+## #   margin_growth_rate &lt;dbl&gt;, op_profit_growth_rate &lt;dbl&gt;,
+## #   cash_reinv_rate &lt;dbl&gt;, asset_growth_rate &lt;dbl&gt;,
+## #   current_ratio &lt;dbl&gt;, quick_rartio &lt;dbl&gt;, debt_ratio &lt;dbl&gt;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="c1"># comp_id 只是公司代號，不是財務指標，先拿掉</span>
+<span class="n">fin_x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fin</span><span class="p">[,</span><span class="w"> </span><span class="m">-1</span><span class="p">]</span>
+<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">ncol</span></a><span class="p">(</span><span class="n">fin_x</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 16</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">summary</span></a><span class="p">(</span><span class="n">fin_x</span><span class="p">[,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"roe"</span><span class="p">,</span><span class="w"> </span><span class="s">"current_ratio"</span><span class="p">,</span><span class="w"> </span><span class="s">"op_profit_growth_rate"</span><span class="p">)])</span>
+</code></pre></div>
+<pre class="out"><code>##       roe          current_ratio  op_profit_growth_rate
+##  Min.   :-245.20   Min.   :  50   Min.   :-449.3       
+##  1st Qu.:  -0.28   1st Qu.: 187   1st Qu.: -15.5       
+##  Median :   7.98   Median : 297   Median :  15.8       
+##  Mean   :   4.36   Mean   : 394   Mean   :  36.7       
+##  3rd Qu.:  16.54   3rd Qu.: 454   3rd Qu.:  67.6       
+##  Max.   :  37.01   Max.   :3783   Max.   :1708.7</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><a class="fnref" href="ch01.html#s1-9-2" title="課程：第 1 章 1.9・資料框的缺失值"><span class="nf">is.na</span></a><span class="p">(</span><span class="n">fin_x</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="c1"># 看看幾個指標之間的相關</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><a class="fnref" href="ch05.html#s5-1" title="課程：第 5 章 5.1・EDA 是什麼、為什麼要做"><span class="nf">cor</span></a><span class="p">(</span><span class="n">fin_x</span><span class="p">[,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"roe"</span><span class="p">,</span><span class="w"> </span><span class="s">"roa"</span><span class="p">,</span><span class="w"> </span><span class="s">"profit_margin_rate"</span><span class="p">,</span><span class="w"> </span><span class="s">"current_ratio"</span><span class="p">,</span><span class="w"> </span><span class="s">"quick_rartio"</span><span class="p">,</span><span class="w"> </span><span class="s">"debt_ratio"</span><span class="p">)]),</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##                      roe   roa profit_margin_rate current_ratio
+## roe                 1.00  0.93               0.77          0.00
+## roa                 0.93  1.00               0.85         -0.01
+## profit_margin_rate  0.77  0.85               1.00         -0.08
+## current_ratio       0.00 -0.01              -0.08          1.00
+## quick_rartio        0.05  0.05              -0.02          0.98
+## debt_ratio         -0.13 -0.05               0.03         -0.59
+##                    quick_rartio debt_ratio
+## roe                        0.05      -0.13
+## roa                        0.05      -0.05
+## profit_margin_rate        -0.02       0.03
+## current_ratio              0.98      -0.59
+## quick_rartio               1.00      -0.52
+## debt_ratio                -0.52       1.00</code></pre>
+<p>說明：</p>
+<ul>
+<li>題目寫 163 間公司，但檔案實際是 162 列（<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><code>dim()</code></a> 的結果），以實際資料為準。</li>
+<li>用 <a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read_csv()</code></a> 讀檔。資料裡有些數字有千分位逗號（例如 "1,708.73"），<a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read_csv()</code></a> 會自動把它們讀成數字；如果用 <a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read.csv()</code></a>，這幾欄會變成文字，要另外處理。</li>
+<li><code>comp_id</code> 是公司代號，數字大小沒有意義，所以用 <code>fin[, -1]</code> 拿掉第 1 欄，剩下 16 個財務指標。</li>
+<li>沒有缺失值（<code>sum(is.na())</code> 是 0）。</li>
+<li><strong>單位差很多</strong>：流動比率大多在一兩百（%），最大到 3,783.42；營業利益成長率從 -449.33 到 1,708.73；ROE 大多在正負幾十之間。所以做 PCA 時一定要標準化（<code>scale = TRUE</code>）。</li>
+<li><strong>有些指標高度相關</strong>：ROE、ROA、營業利益率彼此相關（都在衡量獲利），流動比率和速動比率的相關接近 0.98——資訊重複，適合用 PCA 濃縮。</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>題目說明有 163 間公司，實際讀入後共有 162 間公司、17 個欄位，我以 read_csv() 讀入，部分數值含有千分位逗號，read_csv() 會自動轉為數值。其中 comp_id 是公司代號而非財務指標，因此先將其刪除，保留 16 個財務指標進行分析，資料中沒有缺失值。檢查後發現各指標的單位與範圍差異很大，例如流動比率最大可達 3,783.42，營業利益成長率介於 -449.33 與 1,708.73 之間，而 ROE 多在正負數十之間，因此進行主成分分析前必須先標準化，避免數值範圍大的指標主導結果。另外，ROE、ROA 與營業利益率彼此高度相關，流動比率與速動比率的相關係數更達 0.98，表示指標之間有不少重複的資訊，適合以主成分分析濃縮成少數幾個主成分。</p></div></div></section><section class="sec" id="s1-2" data-label="1.2 前兩個主成分共能解釋多少變異"><h2><span class="num">1.2</span>前兩個主成分共能解釋多少變異</h2><details class="refbox" open><summary>對應課程內容（5 處）</summary><ul><li><a href="ch11.html#s11-2-2">第 11 章 11.2・用 prcomp() 做 PCA</a>（prcomp）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（summary、sum）</li><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li><li><a href="ch11.html#s11-2-3">第 11 章 11.2・決定保留幾個主成分</a>（cumsum、screeplot）</li><li><a href="ch06.html#s6-3-3">第 6 章 6.3・殘差圖發現非線性</a>（abline）</li></ul></details><div class="box task"><span class="tag">題目</span><p>以 PCA 或 SPCA 分析，找出前二個主成份共能解釋多少變異？</p></div>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pca</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch11.html#s11-2-2" title="課程：第 11 章 11.2・用 prcomp() 做 PCA"><span class="nf">prcomp</span></a><span class="p">(</span><span class="n">fin_x</span><span class="p">,</span><span class="w"> </span><span class="n">center</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">summary</span></a><span class="p">(</span><span class="n">pca</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## Importance of components:
+##                          PC1   PC2   PC3    PC4    PC5    PC6    PC7
+## Standard deviation     2.033 1.874 1.440 1.1622 1.0132 0.9190 0.8719
+## Proportion of Variance 0.258 0.219 0.130 0.0844 0.0642 0.0528 0.0475
+## Cumulative Proportion  0.258 0.478 0.607 0.6918 0.7559 0.8087 0.8562
+##                           PC8    PC9   PC10   PC11   PC12    PC13
+## Standard deviation     0.7765 0.7393 0.6785 0.5610 0.5035 0.27912
+## Proportion of Variance 0.0377 0.0342 0.0288 0.0197 0.0158 0.00487
+## Cumulative Proportion  0.8939 0.9281 0.9568 0.9765 0.9924 0.99723
+##                           PC14    PC15    PC16
+## Standard deviation     0.15178 0.12692 0.07223
+## Proportion of Variance 0.00144 0.00101 0.00033
+## Cumulative Proportion  0.99867 0.99967 1.00000</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="c1"># 自己算一次：每個主成分解釋的比例</span>
+<span class="n">eigen_value</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pca</span><span class="o">$</span><span class="n">sdev</span><span class="o">^</span><span class="m">2</span>
+<span class="n">pve</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">eigen_value</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">eigen_value</span><span class="p">)</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">pve</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##  [1] 0.2583 0.2195 0.1296 0.0844 0.0642 0.0528 0.0475 0.0377 0.0342
+## [10] 0.0288 0.0197 0.0158 0.0049 0.0014 0.0010 0.0003</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><a class="fnref" href="ch11.html#s11-2-3" title="課程：第 11 章 11.2・決定保留幾個主成分"><span class="nf">cumsum</span></a><span class="p">(</span><span class="n">pve</span><span class="p">),</span><span class="w"> </span><span class="m">4</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##  [1] 0.2583 0.4778 0.6074 0.6918 0.7559 0.8087 0.8562 0.8939 0.9281
+## [10] 0.9568 0.9765 0.9924 0.9972 0.9987 0.9997 1.0000</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch11.html#s11-2-3" title="課程：第 11 章 11.2・決定保留幾個主成分"><span class="nf">screeplot</span></a><span class="p">(</span><span class="n">pca</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"line"</span><span class="p">,</span><span class="w"> </span><span class="n">npcs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">16</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Scree plot"</span><span class="p">)</span>
+<a class="fnref" href="ch06.html#s6-3-3" title="課程：第 6 章 6.3・殘差圖發現非線性"><span class="nf">abline</span></a><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">lty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/hw04-unnamed-chunk-7-1.png" target="_blank"><img src="assets/fig/hw04-unnamed-chunk-7-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">eigen_value</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##  [1] 4.13 3.51 2.07 1.35 1.03 0.84 0.76 0.60 0.55 0.46 0.31 0.25 0.08
+## [14] 0.02 0.02 0.01</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">eigen_value</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">       </span><span class="c1"># 特徵值大於 1 的主成分有幾個</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 5</code></pre>
+<p>說明：</p>
+<ul>
+<li><code>prcomp(fin_x, center = TRUE, scale = TRUE)</code>：先把每個指標標準化（平均 0、標準差 1），再做 PCA。16 個指標得到 16 個主成分。</li>
+<li><code>summary(pca)</code> 的 <code>Proportion of Variance</code> 是每個主成分解釋的比例，<code>Cumulative Proportion</code> 是累積比例。我也用 <code>sdev^2</code>（特徵值）自己算了一次，結果相同。</li>
+<li><strong>PC1 解釋 25.83%、PC2 解釋 21.95%，前兩個主成分合計解釋 47.78%</strong> 的變異。</li>
+<li>只有不到一半，因為財務指標涵蓋獲利、週轉、成長、償債等很多不同面向，兩個主成分裝不下。依其他準則：<ul>
+<li><strong>Kaiser 準則</strong>：特徵值大於 1 的主成分有 5 個（陡坡圖中藍線以上）。</li>
+<li><strong>累積 80%</strong>：需要 6 個主成分。</li>
+<li>陡坡圖在第 3 個主成分之後明顯變平，所以下一題解讀前三個主成分。</li>
+</ul>
+</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>我以 prcomp() 對 16 個財務指標進行主成分分析，並設定 center = TRUE 與 scale = TRUE，先將每個指標標準化為平均 0、標準差 1，以避免單位不同的影響。由 summary() 的結果可知，第一主成分可解釋 25.83% 的變異，第二主成分可解釋 21.95%，前兩個主成分合計可解釋 47.78% 的變異；我也以特徵值（sdev 的平方）除以特徵值總和自行計算，結果相同。前兩個主成分的解釋比例不到一半，原因是財務指標涵蓋獲利能力、經營效率、成長性與償債能力等不同面向。若依 Kaiser 準則，特徵值大於 1 的主成分共有 5 個；若以累積解釋變異達 80% 為標準，則需要 6 個主成分；而陡坡圖在第三個主成分之後明顯趨於平緩，因此後續以前三個主成分進行解讀。</p></div></div></section><section class="sec" id="s1-3" data-label="1.3 前三個主成分的重點變數"><h2><span class="num">1.3</span>前三個主成分的重點變數</h2><details class="refbox" open><summary>對應課程內容（7 處）</summary><ul><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li><li><a href="ch01.html#s1-7">第 1 章 1.7・排序與搜尋：sort、order、rank、which</a>（order）</li><li><a href="ch02.html#s2-1-1">第 2 章 2.1・為什麼需要管線</a>（abs）</li><li><a href="ch11.html#s11-2-5">第 11 章 11.2・主成分分數與雙標圖</a>（biplot）</li><li><a href="ch04.html#s4-2">第 4 章 4.2・亂數與 set.seed()</a>（set.seed）</li><li><a href="ch11.html#s11-3">第 11 章 11.3・稀疏主成分分析 SPCA</a>（nscumcomp）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（ncol）</li></ul></details><div class="box task"><span class="tag">題目</span><p>找出前三個主成份分別重點變數為何，需說明你的理由。</p></div>
+<h3 id="s1-3-1">PCA 的負荷量</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">loadings</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">pca</span><span class="o">$</span><span class="n">rotation</span><span class="p">[,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">3</span><span class="p">],</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="n">loadings</span>
+</code></pre></div>
+<pre class="out"><code>##                          PC1    PC2    PC3
+## roe                    0.351 -0.308  0.100
+## roa                    0.372 -0.299  0.094
+## profit_margin_rate     0.374 -0.253  0.171
+## gross_margin_rate     -0.077 -0.402 -0.085
+## expense_rate          -0.406 -0.019 -0.217
+## asset_turnover         0.276  0.200 -0.384
+## inventory_turnover     0.165  0.140 -0.084
+## equity_turnnover       0.230  0.300 -0.258
+## rev_growth_rate        0.208  0.028 -0.515
+## margin_growth_rate     0.068 -0.014 -0.297
+## op_profit_growth_rate  0.120 -0.080 -0.259
+## cash_reinv_rate        0.228 -0.200  0.188
+## asset_growth_rate      0.217 -0.118 -0.264
+## current_ratio         -0.206 -0.352 -0.280
+## quick_rartio          -0.183 -0.368 -0.249
+## debt_ratio             0.186  0.346  0.104</code></pre>
+<p>一次看 16 個數字不好找，把每個主成分的負荷量<strong>依絕對值由大到小</strong>排出前 5 名：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pc1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pca</span><span class="o">$</span><span class="n">rotation</span><span class="p">[,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">pc1</span><span class="p">[</span><a class="fnref" href="ch01.html#s1-7" title="課程：第 1 章 1.7・排序與搜尋：sort、order、rank、which"><span class="nf">order</span></a><span class="p">(</span><a class="fnref" href="ch02.html#s2-1-1" title="課程：第 2 章 2.1・為什麼需要管線"><span class="nf">abs</span></a><span class="p">(</span><span class="n">pc1</span><span class="p">),</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)][</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">],</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##       expense_rate profit_margin_rate                roa 
+##             -0.406              0.374              0.372 
+##                roe     asset_turnover 
+##              0.351              0.276</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pc2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pca</span><span class="o">$</span><span class="n">rotation</span><span class="p">[,</span><span class="w"> </span><span class="m">2</span><span class="p">]</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">pc2</span><span class="p">[</span><a class="fnref" href="ch01.html#s1-7" title="課程：第 1 章 1.7・排序與搜尋：sort、order、rank、which"><span class="nf">order</span></a><span class="p">(</span><a class="fnref" href="ch02.html#s2-1-1" title="課程：第 2 章 2.1・為什麼需要管線"><span class="nf">abs</span></a><span class="p">(</span><span class="n">pc2</span><span class="p">),</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)][</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">],</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## gross_margin_rate      quick_rartio     current_ratio        debt_ratio 
+##            -0.402            -0.368            -0.352             0.346 
+##               roe 
+##            -0.308</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pc3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pca</span><span class="o">$</span><span class="n">rotation</span><span class="p">[,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">pc3</span><span class="p">[</span><a class="fnref" href="ch01.html#s1-7" title="課程：第 1 章 1.7・排序與搜尋：sort、order、rank、which"><span class="nf">order</span></a><span class="p">(</span><a class="fnref" href="ch02.html#s2-1-1" title="課程：第 2 章 2.1・為什麼需要管線"><span class="nf">abs</span></a><span class="p">(</span><span class="n">pc3</span><span class="p">),</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)][</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">],</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##    rev_growth_rate     asset_turnover margin_growth_rate 
+##             -0.515             -0.384             -0.297 
+##      current_ratio  asset_growth_rate 
+##             -0.280             -0.264</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch11.html#s11-2-5" title="課程：第 11 章 11.2・主成分分數與雙標圖"><span class="nf">biplot</span></a><span class="p">(</span><span class="n">pca</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="m">0.7</span><span class="p">))</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/hw04-unnamed-chunk-12-1.png" target="_blank"><img src="assets/fig/hw04-unnamed-chunk-12-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<h3 id="s1-3-2">用 SPCA 確認</h3>
+<p>PCA 的負荷量每個指標都不是 0，要自己判斷哪些「算大」。用 SPCA 讓不重要的負荷量變成 0，看重點變數是否一致：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch04.html#s4-2" title="課程：第 4 章 4.2・亂數與 set.seed()"><span class="nf">set.seed</span></a><span class="p">(</span><span class="m">2026</span><span class="p">)</span>
+<span class="n">spca</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch11.html#s11-3" title="課程：第 11 章 11.3・稀疏主成分分析 SPCA"><span class="nf">nscumcomp</span></a><span class="p">(</span><span class="n">fin_x</span><span class="p">,</span><span class="w"> </span><span class="n">ncomp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">nneg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">scale.</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">spca</span><span class="o">$</span><span class="n">rotation</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##                         PC1   PC2   PC3
+## roe                   0.535 0.000 0.000
+## roa                   0.547 0.000 0.000
+## profit_margin_rate    0.514 0.000 0.000
+## gross_margin_rate     0.000 0.441 0.000
+## expense_rate          0.000 0.365 0.000
+## asset_turnover        0.000 0.000 0.587
+## inventory_turnover    0.000 0.000 0.000
+## equity_turnnover      0.000 0.000 0.597
+## rev_growth_rate       0.000 0.000 0.403
+## margin_growth_rate    0.000 0.000 0.000
+## op_profit_growth_rate 0.000 0.000 0.000
+## cash_reinv_rate       0.388 0.000 0.000
+## asset_growth_rate     0.000 0.000 0.000
+## current_ratio         0.000 0.580 0.000
+## quick_rartio          0.000 0.579 0.000
+## debt_ratio            0.000 0.000 0.369</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">spca</span><span class="o">$</span><span class="n">sdev</span><span class="o">^</span><span class="m">2</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">ncol</span></a><span class="p">(</span><span class="n">fin_x</span><span class="p">),</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">      </span><span class="c1"># 每個 SPCA 主成分占全部變異的比例</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.1915 0.1611 0.1511</code></pre>
+<p>說明：</p>
+<ul>
+<li><code>pca$rotation[, 1:3]</code> 是前三個主成分的負荷量。<a class="fnref" href="ch02.html#s2-1-1" title="課程：第 2 章 2.1・為什麼需要管線"><code>abs()</code></a> 取絕對值，<code>order(..., decreasing = TRUE)</code> 由大到小排序（<a href="ch01.html#s1-7">第 1 章 1.7</a>），取前 5 名就是每個主成分最重要的變數。</li>
+<li>SPCA 用 <a class="fnref" href="ch11.html#s11-3" title="課程：第 11 章 11.3・稀疏主成分分析 SPCA"><code>nscumcomp()</code></a>，3 個主成分共只允許 12 個非 0 負荷量（<code>k = 12</code>），而且都是非負（<code>nneg = TRUE</code>），每個主成分只剩少數幾個變數，更好解釋；三個合計解釋約 50% 的變異，比 PCA 前三個的 61% 少一些，這是換取可解釋性的代價。</li>
+</ul>
+<p><strong>PC1：獲利能力</strong></p>
+<ul>
+<li>PCA 中負荷量絕對值最大的是營業費用率（-0.406）、營業利益率（0.374）、ROA（0.372）、ROE（0.351）。</li>
+<li>理由：ROE、ROA、營業利益率都是<strong>正</strong>的，費用率是<strong>負</strong>的——獲利率越高、費用率越低，PC1 分數越高，正好描述「公司賺錢的能力」。</li>
+<li>SPCA 的第一主成分只留下 ROE、ROA、營業利益率與現金再投資比率，結論一致。</li>
+</ul>
+<p><strong>PC2：財務結構與償債能力（流動性）</strong></p>
+<ul>
+<li>PCA 中負荷量絕對值最大的是毛利率（-0.402）、速動比率（-0.368）、流動比率（-0.352）、負債比率（0.346），其次是 ROE（-0.308）與淨值週轉率（0.3）。</li>
+<li>理由：流動比率、速動比率是<strong>負</strong>的，負債比率是<strong>正</strong>的——PC2 分數越高，代表負債越多、短期償債能力越弱（流動性越差）；反過來 PC2 越低，代表手上現金多、負債少的保守財務結構。毛利率也是負的，表示這類高負債公司多為毛利較低、靠周轉的產業。</li>
+<li>SPCA 的第二主成分是毛利率、費用率、流動比率、速動比率，同樣集中在流動性與毛利。</li>
+</ul>
+<p><strong>PC3：成長性與經營效率</strong></p>
+<ul>
+<li>PCA 中負荷量絕對值最大的是營收成長率（-0.515）、資產週轉率（-0.384）、毛利成長率（-0.297）、流動比率、資產成長率等。</li>
+<li>理由：營收、毛利、營業利益、資產的<strong>成長率</strong>同號，加上資產週轉率、淨值週轉率，代表公司「營收成長與資產運用的效率」（負號只是方向：PC3 越小，成長越快、週轉越快）。</li>
+<li>SPCA 的第三主成分是資產週轉率、淨值週轉率、營收成長率、負債比率，也是成長與週轉。</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>我以 prcomp() 結果中的 rotation 取得前三個主成分的負荷量，並用 abs() 與 order() 將每個主成分的負荷量依絕對值由大到小排序，找出各主成分中影響最大的變數；另外以 nscumcomp() 進行稀疏主成分分析（SPCA），設定 3 個主成分共 12 個非 0 負荷量且皆為非負，讓不重要的變數係數變為 0，用來確認重點變數。第一主成分的重點變數為營業費用率（負荷量 -0.406）、營業利益率（0.374）、ROA（0.372）與 ROE（0.351）。其中 ROE、ROA 與營業利益率為正、營業費用率為負，表示獲利率越高、費用率越低的公司在第一主成分的分數越高，因此第一主成分代表「獲利能力」；SPCA 的第一主成分也只保留 ROE、ROA、營業利益率與現金再投資比率，結論一致。第二主成分的重點變數為毛利率（-0.402）、速動比率（-0.368）、流動比率（-0.352）與負債比率（0.346）。流動比率、速動比率為負，負債比率為正，表示第二主成分分數越高的公司負債越多、短期償債能力越弱，因此第二主成分代表「財務結構與償債能力」；SPCA 的第二主成分同樣以毛利率、費用率、流動比率與速動比率為主。第三主成分的重點變數為營收成長率（-0.515）、資產週轉率（-0.384）與毛利成長率（-0.297），營收、毛利、營業利益與資產的成長率方向一致，並與資產週轉率、淨值週轉率一起變動，因此第三主成分代表「成長性與經營效率」；SPCA 的第三主成分為資產週轉率、淨值週轉率、營收成長率與負債比率，結論相近。由於 SPCA 讓每個主成分只由少數變數構成，三個主成分合計解釋約 50% 的變異，略低於 PCA 前三個主成分的 61%，但更容易解釋。</p></div></div></section><section class="sec" id="s1-4" data-label="1.4 依第一主成分找出適合投資的公司"><h2><span class="num">1.4</span>依第一主成分找出適合投資的公司</h2><details class="refbox" open><summary>對應課程內容（5 處）</summary><ul><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li><li><a href="ch01.html#s1-7">第 1 章 1.7・排序與搜尋：sort、order、rank、which</a>（sort）</li><li><a href="ch03.html#s3-5-2">第 3 章 3.5・ifelse()：向量化的判斷</a>（ifelse）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（median、mean）</li><li><a href="ch02.html#s2-2-5">第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總</a>（group_by、summarise、n）</li></ul></details><div class="box task"><span class="tag">題目</span><p>找出適合投資的公司。（不需指出是哪間公司，只需依第一主成份結果說明，例如：適合投資資產報酬率高的公司）</p></div>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="c1"># 第一主成分的負荷量，由大到小</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><a class="fnref" href="ch01.html#s1-7" title="課程：第 1 章 1.7・排序與搜尋：sort、order、rank、which"><span class="nf">sort</span></a><span class="p">(</span><span class="n">pca</span><span class="o">$</span><span class="n">rotation</span><span class="p">[,</span><span class="w"> </span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##    profit_margin_rate                   roa                   roe 
+##                 0.374                 0.372                 0.351 
+##        asset_turnover      equity_turnnover       cash_reinv_rate 
+##                 0.276                 0.230                 0.228 
+##     asset_growth_rate       rev_growth_rate            debt_ratio 
+##                 0.217                 0.208                 0.186 
+##    inventory_turnover op_profit_growth_rate    margin_growth_rate 
+##                 0.165                 0.120                 0.068 
+##     gross_margin_rate          quick_rartio         current_ratio 
+##                -0.077                -0.183                -0.206 
+##          expense_rate 
+##                -0.406</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="c1"># 每間公司的 PC1 分數；分數高 = 獲利能力強</span>
+<span class="n">fin</span><span class="o">$</span><span class="n">pc1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pca</span><span class="o">$</span><span class="n">x</span><span class="p">[,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span>
+<span class="n">fin</span><span class="o">$</span><span class="n">group</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch03.html#s3-5-2" title="課程：第 3 章 3.5・ifelse()：向量化的判斷"><span class="nf">ifelse</span></a><span class="p">(</span><span class="n">fin</span><span class="o">$</span><span class="n">pc1</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">median</span></a><span class="p">(</span><span class="n">fin</span><span class="o">$</span><span class="n">pc1</span><span class="p">),</span><span class="w"> </span><span class="s">"PC1 高"</span><span class="p">,</span><span class="w"> </span><span class="s">"PC1 低"</span><span class="p">)</span>
+<span class="n">fin</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">group_by</span></a><span class="p">(</span><span class="n">group</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">summarise</span></a><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">n</span></a><span class="p">(),</span>
+<span class="w">            </span><span class="n">roe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">roe</span><span class="p">),</span><span class="w"> </span><span class="n">roa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">roa</span><span class="p">),</span>
+<span class="w">            </span><span class="n">profit_margin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">profit_margin_rate</span><span class="p">),</span>
+<span class="w">            </span><span class="n">expense_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">expense_rate</span><span class="p">),</span>
+<span class="w">            </span><span class="n">cash_reinv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">cash_reinv_rate</span><span class="p">),</span>
+<span class="w">            </span><span class="n">debt_ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">debt_ratio</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 2 × 8
+##   group      n   roe   roa profit_margin expense_rate cash_reinv
+##   &lt;chr&gt;  &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt;         &lt;dbl&gt;        &lt;dbl&gt;      &lt;dbl&gt;
+## 1 PC1 低    81 -5.51 -1.48         -6.15         40.7      -1.52
+## 2 PC1 高    81 14.2   9.84         13.1          15.2       4.98
+## # ℹ 1 more variable: debt_ratio &lt;dbl&gt;</code></pre>
+<p>說明：</p>
+<ul>
+<li><code>sort(..., decreasing = TRUE)</code> 把第一主成分的負荷量由大到小排列：正的最大的是營業利益率、ROA、ROE，其後是資產週轉率、淨值週轉率、現金再投資比率、資產成長率等；負的最大的是營業費用率，其次是流動比率、速動比率。</li>
+<li><code>pca$x[, 1]</code> 是每間公司的 PC1 分數。我用中位數把公司分成「PC1 高」和「PC1 低」兩半，比較兩組指標的平均：PC1 高的那一半，ROE、ROA、營業利益率都明顯較高，費用率較低。（ROE、ROA 的平均會被少數虧損很大的公司拉低，用中位數比較也是同樣的結論：PC1 高的 ROE 中位數 15.2%，PC1 低的只有 1.4%。）</li>
+<li><strong>結論</strong>：第一主成分代表獲利能力，分數越高越好。適合投資的是：<ul>
+<li><strong>ROE、ROA 高</strong>，能有效運用股東資金與資產創造獲利；</li>
+<li><strong>營業利益率高、營業費用率低</strong>，本業賺錢、費用控制得好；</li>
+<li>同時<strong>資產週轉率、淨值週轉率與現金再投資比率較高</strong>的公司，資產運用效率好、營運產生的現金能再投入，成長較能延續。</li>
+</ul>
+</li>
+<li>第一主成分中流動比率、速動比率是負的，代表獲利能力強的公司不一定把大量資金閒置在流動資產上；不過投資時仍應搭配第二主成分（償債能力）確認負債比率不要過高。</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>第一主成分代表公司的獲利能力。將第一主成分的負荷量以 sort() 由大到小排列後可以看到，正向影響最大的是營業利益率（0.374）、ROA（0.372）與 ROE（0.351），其次是資產週轉率、淨值週轉率與現金再投資比率等，而負向影響最大的是營業費用率（-0.406）。我取出每間公司的第一主成分分數，以中位數將公司分為分數較高與較低的兩組比較，分數較高的一組 ROE 中位數為 15.2%、ROA 中位數為 9.3%、營業利益率中位數為 11.5%，而分數較低的一組分別只有 1.4%、1.2% 與 0.7%，營業費用率則以分數較高的一組較低。因此依第一主成分的結果，適合投資的是股東權益報酬率與資產報酬率高、營業利益率高且營業費用率低的公司，也就是本業獲利能力強、費用控制良好，並且資產週轉與現金再投資表現較佳的公司。不過第一主成分無法反映財務風險，實際投資時仍應搭配代表償債能力的第二主成分，避免選到負債比率過高的公司。</p></div></div></section>
+<nav class="pager"><a class="prev" href="hw03.html">← 作業 3</a><span></span></nav></main>
+<script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
+<script src="assets/search.js?v=496b2db6"></script>
+<script src="assets/site.js?v=ba35a458"></script>
+</body></html>

@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>作業 3 飯店訂房取消預測與客群分析｜商業分析：R課程筆記</title>
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css?v=113869c6">
+</head><body data-page="hw03" data-mode="hw">
+<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
+<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇單元"><option value="hw01.html">作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html" selected>作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html">作業 4　財務指標的主成分分析</option></select></div></div>
+<main class="wrap"><header class="ch-head"><h1>作業 3　飯店訂房取消預測與客群分析</h1><details class="ch-toc"><summary>本頁目錄（6 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>資料讀取、清理與抽樣（兩題共用）</a></li><li><a href="#s1-2"><span>1.2</span>決策樹預測訂房是否取消</a></li><li><a href="#s2-1"><span>2.1</span>分群變數、標準化與群數選擇</a></li><li><a href="#s2-2"><span>2.2</span>描述各群並命名</a></li><li><a href="#s2-3"><span>2.3</span>各群的取消率、飯店類型與市場區隔</a></li><li><a href="#s2-4"><span>2.4</span>給飯店的商業策略建議</a></li></ol></details></header>
+<div class="ch-intro"><p>作業 3 用葡萄牙兩家飯店 119,390 筆訂房紀錄，做兩件事：第 1 題用<strong>監督式學習</strong>（決策樹）預測訂房是否會取消；第 2 題用<strong>非監督式學習</strong>（K-means）把訂房分成幾種客群，比較各群的取消率與組成，最後提出營運與行銷策略。用到的課堂內容：</p>
+<ul>
+<li>資料清理：<code>filter()</code>、<code>mutate()</code>、<code>ifelse()</code>、<code>is.na()</code>（<a href="ch01.html#s1-9">第 1 章 1.9</a>、<a href="ch02.html#s2-2">第 2 章 2.2</a>）</li>
+<li>切分訓練集與測試集：<code>sample()</code>（<a href="ch08.html#s8-2">第 8 章 8.2</a>）</li>
+<li>決策樹、混淆矩陣、敏感度與特異度：<code>rpart()</code>、<code>rpart.plot()</code>、<code>table()</code>（<a href="ch10.html#s10-3">第 10 章 10.1、10.3</a>）</li>
+<li>標準化與 K-means、肘部法則、輪廓係數：<code>scale()</code>、<code>kmeans()</code>、<code>fviz_nbclust()</code>（<a href="ch09.html#s9-3">第 9 章 9.2～9.4</a>）</li>
+<li>描述各群：<code>group_by()</code> + <code>summarise()</code>、<code>count()</code>、<code>ggplot()</code>（<a href="ch09.html#s9-6">第 9 章 9.6</a>）</li>
+</ul>
+<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個函數的地方。</p>
+<p>資料：<a href="https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-11/hotels.csv">hotels.csv（tidytuesday 原始檔）</a>，下載後放在工作目錄。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">rpart</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">rpart.plot</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">factoextra</span><span class="p">)</span>
+<span class="nf">set.seed</span><span class="p">(</span><span class="m">2026</span><span class="p">)</span><span class="w">        </span><span class="c1"># 題目規定：程式開頭執行一次</span>
+</code></pre></div></div><section class="sec" id="s1-1" data-label="1.1 資料讀取、清理與抽樣（兩題共用）"><h2><span class="num">1.1</span>資料讀取、清理與抽樣（兩題共用）</h2><details class="refbox" open><summary>對應課程內容（8 處）</summary><ul><li><a href="ch01.html#s1-8-2">第 1 章 1.8・讀 CSV：read.csv()</a>（read.csv）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（dim、nrow）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（mean、sum、summary）</li><li><a href="ch01.html#s1-9-2">第 1 章 1.9・資料框的缺失值</a>（is.na）</li><li><a href="ch02.html#s2-2-1">第 2 章 2.2・filter()：依條件挑列</a>（filter）</li><li><a href="ch02.html#s2-2-3">第 2 章 2.2・mutate()：新增欄位</a>（mutate）</li><li><a href="ch03.html#s3-5-2">第 3 章 3.5・ifelse()：向量化的判斷</a>（ifelse）</li><li><a href="ch04.html#s4-2-1">第 4 章 4.2・sample()：從一組值中抽樣</a>（sample）</li></ul></details><div class="box task"><span class="tag">題目</span><p>資料為葡萄牙兩家飯店（City Hotel、Resort Hotel）預計於 2015 年 7 月至 2017 年 8 月入住的 119,390 筆訂房紀錄，應變數為 is_canceled（1 = 取消或未到）。注意事項：children 有 4 筆 NA；country、agent、company 以字串 "NULL" 表示缺失（company 約 94% 為 "NULL"）；adr 有負值與極端值；少數訂房的成人、兒童、嬰兒人數皆為 0，請說明處理方式。不需使用所有變數；類別數多的變數可刪除或合併；可隨機抽取部分資料（例如 20,000 筆）並註明抽樣筆數。</p></div>
+<h3 id="s1-1-1">讀檔與檢查問題</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">hotels</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><span class="nf">read.csv</span></a><span class="p">(</span><span class="s">"hotels.csv"</span><span class="p">)</span>
+<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">dim</span></a><span class="p">(</span><span class="n">hotels</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 119390     32</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">hotels</span><span class="o">$</span><span class="n">is_canceled</span><span class="p">)</span><span class="w">                     </span><span class="c1"># 整體取消率</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.3704</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><a class="fnref" href="ch01.html#s1-9-2" title="課程：第 1 章 1.9・資料框的缺失值"><span class="nf">is.na</span></a><span class="p">(</span><span class="n">hotels</span><span class="o">$</span><span class="n">children</span><span class="p">))</span><span class="w">                  </span><span class="c1"># children 的 NA</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 4</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">summary</span></a><span class="p">(</span><span class="n">hotels</span><span class="o">$</span><span class="n">adr</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      -6      69      95     102     126    5400</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">hotels</span><span class="o">$</span><span class="n">adr</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="p">);</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">hotels</span><span class="o">$</span><span class="n">adr</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1000</span><span class="p">)</span><span class="w">  </span><span class="c1"># 負值與極端值</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 1</code></pre>
+<pre class="out"><code>## [1] 1</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">hotels</span><span class="o">$</span><span class="n">adults</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hotels</span><span class="o">$</span><span class="n">children</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hotels</span><span class="o">$</span><span class="n">babies</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">na.rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">   </span><span class="c1"># 沒有任何房客</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 180</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">hotels</span><span class="o">$</span><span class="n">company</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"NULL"</span><span class="p">)</span><span class="w">               </span><span class="c1"># company 的缺失比例</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.9431</code></pre>
+<h3 id="s1-1-2">清理、建立新變數、抽樣</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">hotels_clean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hotels</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-1" title="課程：第 2 章 2.2・filter()：依條件挑列"><span class="nf">filter</span></a><span class="p">(</span><span class="o">!</span><a class="fnref" href="ch01.html#s1-9-2" title="課程：第 1 章 1.9・資料框的缺失值"><span class="nf">is.na</span></a><span class="p">(</span><span class="n">children</span><span class="p">),</span><span class="w">                       </span><span class="c1"># 刪除 children 為 NA 的 4 筆</span>
+<span class="w">         </span><span class="n">adr</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">adr</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w">                   </span><span class="c1"># 刪除房價為負與極端值</span>
+<span class="w">         </span><span class="n">adults</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">children</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">babies</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">     </span><span class="c1"># 刪除沒有房客的訂房</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-3" title="課程：第 2 章 2.2・mutate()：新增欄位"><span class="nf">mutate</span></a><span class="p">(</span><span class="n">total_nights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stays_in_weekend_nights</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">stays_in_week_nights</span><span class="p">,</span>
+<span class="w">         </span><span class="n">kids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">children</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">babies</span><span class="p">,</span>
+<span class="w">         </span><span class="n">domestic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch03.html#s3-5-2" title="課程：第 3 章 3.5・ifelse()：向量化的判斷"><span class="nf">ifelse</span></a><span class="p">(</span><span class="n">country</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"PRT"</span><span class="p">,</span><span class="w"> </span><span class="s">"PRT"</span><span class="p">,</span><span class="w"> </span><span class="s">"Other"</span><span class="p">))</span>
+<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">hotels_clean</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 119204</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">n0</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">hotels_clean</span><span class="p">)</span><span class="w">                          </span><span class="c1"># 刪除的筆數</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 186</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">hotels_s</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hotels_clean</span><span class="p">[</span><a class="fnref" href="ch04.html#s4-2-1" title="課程：第 4 章 4.2・sample()：從一組值中抽樣"><span class="nf">sample</span></a><span class="p">(</span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">hotels_clean</span><span class="p">),</span><span class="w"> </span><span class="m">20000</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">   </span><span class="c1"># 隨機抽 20,000 筆</span>
+<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">hotels_s</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 20000</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">hotels_s</span><span class="o">$</span><span class="n">is_canceled</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.3696</code></pre>
+<p>說明：</p>
+<ul>
+<li><strong>整體取消率</strong>約 37%，每三筆訂房就有一筆以上取消，對飯店是很大的空房風險。</li>
+<li><strong>children 的 NA</strong>：只有 4 筆，直接刪除，對結果沒有影響。</li>
+<li><strong>adr 異常值</strong>：房價為負（1 筆）不合理；大於 1000 歐元的只有 1 筆（最大 5400，遠高於第三四分位數 126），應是輸入錯誤。兩者都刪除。adr = 0 的訂房（例如招待房、員工房）保留。</li>
+<li><strong>房客人數為 0</strong>：成人、兒童、嬰兒都是 0 的 180 筆訂房不可能真的入住，視為錯誤資料刪除。</li>
+<li><strong>類別多的變數</strong>：country 有一百多國，把它合併成「葡萄牙本國 PRT」與「其他 Other」兩類（<a class="fnref" href="ch03.html#s3-5-2" title="課程：第 3 章 3.5・ifelse()：向量化的判斷"><code>ifelse()</code></a>）；agent、company 類別太多，company 又有 94% 是缺失，所以不使用。</li>
+<li><strong>新變數</strong>：<code>total_nights</code> = 週末晚數 + 平日晚數（總住宿晚數）；<code>kids</code> = 兒童 + 嬰兒。</li>
+<li><strong>抽樣</strong>：清理後剩 119,204 筆，用 <a class="fnref" href="ch04.html#s4-2-1" title="課程：第 4 章 4.2・sample()：從一組值中抽樣"><code>sample()</code></a> 隨機抽 20,000 筆分析，抽樣後取消率 37%，和全體相近。</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>原始資料有 119,390 筆訂房、32 個變數，整體取消率約 37%。資料處理方式如下：children 有 4 筆缺失值，因筆數極少直接刪除；adr（平均每日房價）有 1 筆負值與 1 筆大於 1000 歐元的極端值（最大為 5400，遠高於第三四分位數 126），判斷為輸入錯誤而刪除，房價為 0 的訂房則視為招待房予以保留；成人、兒童、嬰兒人數皆為 0 的 180 筆訂房不合理，也一併刪除。類別過多的變數中，country 合併為「葡萄牙本國（PRT）」與「其他國家（Other）」兩類，agent 與 company 類別太多且 company 約 94% 為缺失，因此不使用。另外建立總住宿晚數 total_nights（週末晚數加平日晚數）與小孩人數 kids（兒童加嬰兒）兩個新變數。清理後剩 119,204 筆，為了讓運算順利，以 sample() 隨機抽取 20,000 筆進行分析，抽樣後的取消率為 37%，與全體相近。</p></div></div></section><section class="sec" id="s1-2" data-label="1.2 決策樹預測訂房是否取消"><h2><span class="num">1.2</span>決策樹預測訂房是否取消</h2><details class="refbox" open><summary>對應課程內容（10 處）</summary><ul><li><a href="ch02.html#s2-2-2">第 2 章 2.2・select()：挑欄</a>（select）</li><li><a href="ch02.html#s2-2-3">第 2 章 2.2・mutate()：新增欄位</a>（mutate）</li><li><a href="ch01.html#s1-5-1">第 1 章 1.5・指定 levels 與 labels</a>（factor）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（dim、nrow）</li><li><a href="ch04.html#s4-2-1">第 4 章 4.2・sample()：從一組值中抽樣</a>（sample）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（mean、sum）</li><li><a href="ch10.html#s10-3">第 10 章 10.3・決策樹</a>（rpart、rpart.plot、predict）</li><li><a href="ch01.html#s1-8-4">第 1 章 1.8・快速摘要一份真實資料</a>（table）</li><li><a href="ch10.html#s10-1-2">第 10 章 10.1・混淆矩陣與三個指標</a>（diag）</li><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li></ul></details><div class="box task"><span class="tag">題目</span><p>將資料隨機分為訓練集（70%）與測試集（30%）。任選 1 種監督式學習方法預測 is_canceled，在測試集上報告 confusion matrix、accuracy、sensitivity（實際取消的訂房中，被預測為取消的比例）、specificity。</p></div>
+<h3 id="s1-2-1">選變數</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">model_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hotels_s</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-2" title="課程：第 2 章 2.2・select()：挑欄"><span class="nf">select</span></a><span class="p">(</span><span class="n">is_canceled</span><span class="p">,</span><span class="w"> </span><span class="n">hotel</span><span class="p">,</span><span class="w"> </span><span class="n">lead_time</span><span class="p">,</span><span class="w"> </span><span class="n">total_nights</span><span class="p">,</span><span class="w"> </span><span class="n">adults</span><span class="p">,</span><span class="w"> </span><span class="n">kids</span><span class="p">,</span><span class="w"> </span><span class="n">meal</span><span class="p">,</span>
+<span class="w">         </span><span class="n">market_segment</span><span class="p">,</span><span class="w"> </span><span class="n">distribution_channel</span><span class="p">,</span><span class="w"> </span><span class="n">is_repeated_guest</span><span class="p">,</span>
+<span class="w">         </span><span class="n">previous_cancellations</span><span class="p">,</span><span class="w"> </span><span class="n">previous_bookings_not_canceled</span><span class="p">,</span>
+<span class="w">         </span><span class="n">booking_changes</span><span class="p">,</span><span class="w"> </span><span class="n">deposit_type</span><span class="p">,</span><span class="w"> </span><span class="n">days_in_waiting_list</span><span class="p">,</span><span class="w"> </span><span class="n">customer_type</span><span class="p">,</span>
+<span class="w">         </span><span class="n">adr</span><span class="p">,</span><span class="w"> </span><span class="n">required_car_parking_spaces</span><span class="p">,</span><span class="w"> </span><span class="n">total_of_special_requests</span><span class="p">,</span><span class="w"> </span><span class="n">domestic</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-3" title="課程：第 2 章 2.2・mutate()：新增欄位"><span class="nf">mutate</span></a><span class="p">(</span><span class="n">is_canceled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-5-1" title="課程：第 1 章 1.5・指定 levels 與 labels"><span class="nf">factor</span></a><span class="p">(</span><span class="n">is_canceled</span><span class="p">))</span>
+<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">dim</span></a><span class="p">(</span><span class="n">model_data</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 20000    20</code></pre>
+<ul>
+<li>選入的是<strong>訂房當下就知道</strong>的資訊：飯店、提前天數、住宿晚數、人數、餐食、通路、過去紀錄、訂金類型、房價、特殊需求等。</li>
+<li><strong>刻意排除</strong>：<code>reservation_status</code>（Canceled／Check-Out，就是答案本身）、<code>reservation_status_date</code>、<code>assigned_room_type</code>（入住時才分配）——這些是「結果發生後才知道」的變數，放進去會造成資料洩漏（<a href="ch10.html#s10-3">第 10 章 10.3</a> 的提醒），正確率看起來很高但無法用來預測。抵達日期的細項也不放，讓模型著重在訂房特徵。</li>
+<li><code>is_canceled</code> 轉成因子，<a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><code>rpart()</code></a> 才會做分類樹。</li>
+</ul>
+<h3 id="s1-2-2">切分 70% / 30%</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">train_id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch04.html#s4-2-1" title="課程：第 4 章 4.2・sample()：從一組值中抽樣"><span class="nf">sample</span></a><span class="p">(</span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">model_data</span><span class="p">),</span><span class="w"> </span><span class="m">0.7</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">model_data</span><span class="p">))</span>
+<span class="n">train</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_data</span><span class="p">[</span><span class="n">train_id</span><span class="p">,</span><span class="w"> </span><span class="p">]</span>
+<span class="n">test</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_data</span><span class="p">[</span><span class="o">-</span><span class="n">train_id</span><span class="p">,</span><span class="w"> </span><span class="p">]</span>
+<span class="nf">c</span><span class="p">(</span><span class="n">train</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">train</span><span class="p">),</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>## train  test 
+## 14000  6000</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">c</span><span class="p">(</span><span class="n">train</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">train</span><span class="o">$</span><span class="n">is_canceled</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">test</span><span class="o">$</span><span class="n">is_canceled</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>##  train   test 
+## 0.3676 0.3745</code></pre>
+<p><code>sample(n, 0.7 * n)</code> 抽出 70% 的列編號當訓練集，負索引 <code>-train_id</code> 取其餘 30% 當測試集（<a href="ch08.html#s8-2">第 8 章 8.2</a>）。兩組的取消率相近。</p>
+<h3 id="s1-2-3">配適決策樹</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">tree</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><span class="nf">rpart</span></a><span class="p">(</span><span class="n">is_canceled</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">train</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"class"</span><span class="p">)</span>
+<span class="n">tree</span>
+</code></pre></div>
+<pre class="out"><code>## n= 14000 
+## 
+## node), split, n, loss, yval, (yprob)
+##       * denotes terminal node
+## 
+##   1) root 14000 5146 0 (0.632429 0.367571)  
+##     2) deposit_type=No Deposit,Refundable 12281 3443 0 (0.719648 0.280352)  
+##       4) lead_time&lt; 9.5 2607  254 0 (0.902570 0.097430) *
+##       5) lead_time&gt;=9.5 9674 3189 0 (0.670354 0.329646)  
+##        10) domestic=Other 6936 1800 0 (0.740484 0.259516)  
+##          20) market_segment=Aviation,Complementary,Corporate,Direct,Groups,Offline TA/TO 2476  105 0 (0.957593 0.042407) *
+##          21) market_segment=Online TA 4460 1695 0 (0.619955 0.380045)  
+##            42) total_of_special_requests&gt;=0.5 2820  682 0 (0.758156 0.241844) *
+##            43) total_of_special_requests&lt; 0.5 1640  627 1 (0.382317 0.617683) *
+##        11) domestic=PRT 2738 1349 1 (0.492695 0.507305)  
+##          22) previous_cancellations&lt; 0.5 2484 1149 0 (0.537440 0.462560)  
+##            44) required_car_parking_spaces&gt;=0.5 174    0 0 (1.000000 0.000000) *
+##            45) required_car_parking_spaces&lt; 0.5 2310 1149 0 (0.502597 0.497403)  
+##              90) booking_changes&gt;=0.5 406  105 0 (0.741379 0.258621) *
+##              91) booking_changes&lt; 0.5 1904  860 1 (0.451681 0.548319)  
+##               182) total_nights&lt; 3.5 1158  552 0 (0.523316 0.476684)  
+##                 364) total_of_special_requests&gt;=0.5 377  129 0 (0.657825 0.342175) *
+##                 365) total_of_special_requests&lt; 0.5 781  358 1 (0.458387 0.541613) *
+##               183) total_nights&gt;=3.5 746  254 1 (0.340483 0.659517) *
+##          23) previous_cancellations&gt;=0.5 254   14 1 (0.055118 0.944882) *
+##     3) deposit_type=Non Refund 1719   16 1 (0.009308 0.990692) *</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><span class="nf">rpart.plot</span></a><span class="p">(</span><span class="n">tree</span><span class="p">,</span><span class="w"> </span><span class="n">extra</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">104</span><span class="p">,</span><span class="w"> </span><span class="n">fallen.leaves</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">tweak</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.1</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/hw03-unnamed-chunk-8-1.png" target="_blank"><img src="assets/fig/hw03-unnamed-chunk-8-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<ul>
+<li><code>rpart(is_canceled ~ ., method = &quot;class&quot;)</code>：用其他所有變數建分類樹。</li>
+<li><a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><code>rpart.plot()</code></a> 畫出樹；<code>extra = 104</code> 讓每個節點顯示「各類別的比例」與「占全部資料的百分比」，<code>fallen.leaves = TRUE</code> 把葉節點排在最下面。綠色系是預測「取消（1）」、藍色系是預測「不取消（0）」，顏色越深越確定。</li>
+</ul>
+<p>讀樹（往左是「是」）：</p>
+<ul>
+<li><strong>第一刀是訂金類型</strong>：訂金「不退款（Non Refund）」的訂房，訓練集中有 1719 筆，取消率高達 99.1%，直接被判為取消。這看起來違反直覺（不退款應該更不想取消），可能是旅行社或團體先以不退款方式大量占房、之後再整批取消或未到。</li>
+<li><strong>不收訂金或可退訂金</strong>的訂房，再看<strong>提前天數</strong>：入住前不到約 10 天才訂的，取消率很低。</li>
+<li>提前較久的，再看是否為<strong>葡萄牙本國</strong>旅客、<strong>市場區隔</strong>（線上旅行社 Online TA 的取消率較高）、是否有<strong>特殊需求</strong>（有提出特殊需求的較不會取消）、<strong>過去是否取消過</strong>（有取消紀錄的幾乎都會再取消）、是否需要<strong>停車位</strong>（需要停車位的幾乎都不取消）。</li>
+</ul>
+<h3 id="s1-2-4">測試集評估</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pred</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><span class="nf">predict</span></a><span class="p">(</span><span class="n">tree</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"class"</span><span class="p">)</span>
+<span class="n">cm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-8-4" title="課程：第 1 章 1.8・快速摘要一份真實資料"><span class="nf">table</span></a><span class="p">(</span><span class="n">Real</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test</span><span class="o">$</span><span class="n">is_canceled</span><span class="p">,</span><span class="w"> </span><span class="n">Predict</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pred</span><span class="p">)</span>
+<span class="n">cm</span>
+</code></pre></div>
+<pre class="out"><code>##     Predict
+## Real    0    1
+##    0 3216  537
+##    1  607 1640</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">accuracy</span><span class="w">    </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><a class="fnref" href="ch10.html#s10-1-2" title="課程：第 10 章 10.1・混淆矩陣與三個指標"><span class="nf">diag</span></a><span class="p">(</span><span class="n">cm</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">cm</span><span class="p">)</span>
+<span class="n">sensitivity</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cm</span><span class="p">[</span><span class="s">"1"</span><span class="p">,</span><span class="w"> </span><span class="s">"1"</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="s">"1"</span><span class="p">,</span><span class="w"> </span><span class="p">])</span>
+<span class="n">specificity</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cm</span><span class="p">[</span><span class="s">"0"</span><span class="p">,</span><span class="w"> </span><span class="s">"0"</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">sum</span></a><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="s">"0"</span><span class="p">,</span><span class="w"> </span><span class="p">])</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accuracy</span><span class="p">,</span><span class="w"> </span><span class="n">sensitivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sensitivity</span><span class="p">,</span><span class="w"> </span><span class="n">specificity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">specificity</span><span class="p">),</span><span class="w"> </span><span class="m">4</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##    accuracy sensitivity specificity 
+##      0.8093      0.7299      0.8569</code></pre>
+<p>說明：</p>
+<ul>
+<li><code>predict(..., type = &quot;class&quot;)</code> 對測試集的 6000 筆訂房預測 0 或 1，<code>table(實際, 預測)</code> 做成混淆矩陣：列是實際、欄是預測（<a href="ch10.html#s10-1">第 10 章 10.1</a>）。</li>
+<li><strong>正確率</strong>（對角線 ÷ 總數）= 0.8093：約 81% 的訂房預測正確。</li>
+<li><strong>敏感度</strong>（實際取消的 2247 筆中，被預測為取消的 1640 筆）= 0.7299。</li>
+<li><strong>特異度</strong>（實際沒取消的 3753 筆中，被預測為不取消的 3216 筆）= 0.8569。</li>
+<li>特異度高於敏感度：模型比較擅長辨認「不會取消」的訂房，仍有約 27% 的取消訂房被漏掉（預測不取消、實際取消），這部分是飯店最難防範的空房來源。</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>我將抽樣後的 20,000 筆資料以 sample() 隨機分為訓練集 70%（14000 筆）與測試集 30%（6000 筆），選用決策樹（rpart，method = "class"）預測 is_canceled。預測變數選擇訂房當下即可得知的資訊，包括飯店類型、提前訂房天數、總住宿晚數、成人與小孩人數、餐食方案、市場區隔、訂房通路、是否為回頭客、過去取消與未取消次數、訂房修改次數、訂金類型、候補天數、客戶類型、平均每日房價、停車位需求、特殊需求數，以及是否為葡萄牙本國旅客；reservation_status、reservation_status_date 與 assigned_room_type 屬於訂房結果發生後才知道的資訊，會造成資料洩漏，因此不放入模型。從決策樹可以看出，訂金類型是最重要的切分：訂金不可退（Non Refund）的訂房在訓練集中取消率高達 99.1%；其次是提前訂房天數，入住前約 10 天內才訂的取消率很低；再往下則依是否為葡萄牙本國旅客、是否透過線上旅行社、有無特殊需求、過去是否取消過、是否需要停車位等條件區分，其中有過取消紀錄的旅客幾乎都會再取消，需要停車位或有特殊需求的旅客則較不會取消。在測試集上的混淆矩陣為：實際未取消且預測未取消 3216 筆、實際未取消但預測取消 537 筆、實際取消但預測未取消 607 筆、實際取消且預測取消 1640 筆。正確率（accuracy）為 0.8093，敏感度（sensitivity，實際取消的訂房中被預測為取消的比例）為 0.7299，特異度（specificity，實際未取消的訂房中被預測為未取消的比例）為 0.8569。模型辨認「不會取消」的能力較好，但仍有約 27% 的取消訂房沒有被預測出來。</p></div></div></section><section class="sec" id="s2-1" data-label="2.1 分群變數、標準化與群數選擇"><h2><span class="num">2.1</span>分群變數、標準化與群數選擇</h2><details class="refbox" open><summary>對應課程內容（10 處）</summary><ul><li><a href="ch09.html#s9-2">第 9 章 9.2・距離與標準化</a>（scale）</li><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li><li><a href="ch03.html#s3-7-1">第 3 章 3.7・apply()：矩陣或資料框的每一列／每一欄</a>（apply）</li><li><a href="ch03.html#s3-6-1">第 3 章 3.6・for：已知要重複幾次</a>（for）</li><li><a href="ch09.html#s9-3-2">第 9 章 9.3・用 kmeans() 分群</a>（kmeans）</li><li><a href="ch05.html#s5-2-1">第 5 章 5.2・R 內建繪圖（base R）</a>（plot）</li><li><a href="ch06.html#s6-3-3">第 6 章 6.3・殘差圖發現非線性</a>（abline）</li><li><a href="ch04.html#s4-2-1">第 4 章 4.2・sample()：從一組值中抽樣</a>（sample）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（nrow）</li><li><a href="ch09.html#s9-4-1">第 9 章 9.4・肘部法則 Elbow method</a>（fviz_nbclust）</li></ul></details><div class="box task"><span class="tag">題目</span><p>任選 1 種非監督式學習方法將訂房分群（不需切分訓練集與測試集）。分群變數自選，is_canceled 不可作為分群變數；數值變數請先標準化；說明群數的選擇依據（例如 elbow method、silhouette）。</p></div>
+<h3 id="s2-1-1">分群變數與標準化</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">cluster_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"lead_time"</span><span class="p">,</span><span class="w"> </span><span class="s">"total_nights"</span><span class="p">,</span><span class="w"> </span><span class="s">"adults"</span><span class="p">,</span><span class="w"> </span><span class="s">"kids"</span><span class="p">,</span><span class="w"> </span><span class="s">"adr"</span><span class="p">,</span>
+<span class="w">                  </span><span class="s">"total_of_special_requests"</span><span class="p">,</span><span class="w"> </span><span class="s">"required_car_parking_spaces"</span><span class="p">,</span>
+<span class="w">                  </span><span class="s">"booking_changes"</span><span class="p">)</span>
+<span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch09.html#s9-2" title="課程：第 9 章 9.2・距離與標準化"><span class="nf">scale</span></a><span class="p">(</span><span class="n">hotels_s</span><span class="p">[,</span><span class="w"> </span><span class="n">cluster_vars</span><span class="p">])</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><a class="fnref" href="ch03.html#s3-7-1" title="課程：第 3 章 3.7・apply()：矩陣或資料框的每一列／每一欄"><span class="nf">apply</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">),</span><span class="w"> </span><span class="m">4</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##                   lead_time                total_nights 
+##                           0                           0 
+##                      adults                        kids 
+##                           0                           0 
+##                         adr   total_of_special_requests 
+##                           0                           0 
+## required_car_parking_spaces             booking_changes 
+##                           0                           0</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><a class="fnref" href="ch03.html#s3-7-1" title="課程：第 3 章 3.7・apply()：矩陣或資料框的每一列／每一欄"><span class="nf">apply</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">sd</span><span class="p">),</span><span class="w"> </span><span class="m">4</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##                   lead_time                total_nights 
+##                           1                           1 
+##                      adults                        kids 
+##                           1                           1 
+##                         adr   total_of_special_requests 
+##                           1                           1 
+## required_car_parking_spaces             booking_changes 
+##                           1                           1</code></pre>
+<ul>
+<li>選 8 個描述「這筆訂房長什麼樣子」的數值變數：提前天數、住宿晚數、成人數、小孩數、房價、特殊需求數、停車位數、修改次數。<strong>is_canceled 不放</strong>（題目規定，也因為我們要事後拿取消率來比較各群）。</li>
+<li>變數單位差很多（提前天數可達數百天、停車位只有 0～3），所以先用 <a class="fnref" href="ch09.html#s9-2" title="課程：第 9 章 9.2・距離與標準化"><code>scale()</code></a> 標準化成平均 0、標準差 1（<a href="ch09.html#s9-2">第 9 章 9.2</a>）。</li>
+<li>方法選 <strong>K-means</strong>：20,000 筆資料用階層式分群要算約兩億個距離，K-means 快得多。</li>
+</ul>
+<h3 id="s2-1-2">肘部法則</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">wss</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">()</span><span class="w">                                  </span><span class="c1"># 先準備一個空向量</span>
+<a class="fnref" href="ch03.html#s3-6-1" title="課程：第 3 章 3.6・for：已知要重複幾次"><span class="kr">for</span></a><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">km_k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch09.html#s9-3-2" title="課程：第 9 章 9.3・用 kmeans() 分群"><span class="nf">kmeans</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">centers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">nstart</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">iter.max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">50</span><span class="p">)</span>
+<span class="w">  </span><span class="n">wss</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">km_k</span><span class="o">$</span><span class="n">tot.withinss</span><span class="w">               </span><span class="c1"># 第 k 格放 k 群時的總群內平方和</span>
+<span class="p">}</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">wss</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##  [1] 159992 139332 124252 108721  95193  86098  78919  72402  68085
+## [10]  65779</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="o">-</span><span class="nf">diff</span><span class="p">(</span><span class="n">wss</span><span class="p">))</span><span class="w">                           </span><span class="c1"># 每多分一群，平方和減少多少</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 20660 15080 15531 13528  9095  7179  6517  4317  2306</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch05.html#s5-2-1" title="課程：第 5 章 5.2・R 內建繪圖（base R）"><span class="nf">plot</span></a><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">wss</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"b"</span><span class="p">,</span><span class="w"> </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"k"</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Total within SS"</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Elbow method"</span><span class="p">)</span>
+<a class="fnref" href="ch06.html#s6-3-3" title="課程：第 6 章 6.3・殘差圖發現非線性"><span class="nf">abline</span></a><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">lty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/hw03-unnamed-chunk-12-1.png" target="_blank"><img src="assets/fig/hw03-unnamed-chunk-12-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<h3 id="s2-1-3">輪廓係數（抽 3,000 筆計算）</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">X_sub</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">X</span><span class="p">[</span><a class="fnref" href="ch04.html#s4-2-1" title="課程：第 4 章 4.2・sample()：從一組值中抽樣"><span class="nf">sample</span></a><span class="p">(</span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="m">3000</span><span class="p">),</span><span class="w"> </span><span class="p">]</span>
+<a class="fnref" href="ch09.html#s9-4-1" title="課程：第 9 章 9.4・肘部法則 Elbow method"><span class="nf">fviz_nbclust</span></a><span class="p">(</span><span class="n">X_sub</span><span class="p">,</span><span class="w"> </span><span class="n">FUNcluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmeans</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"silhouette"</span><span class="p">,</span><span class="w"> </span><span class="n">k.max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">nstart</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/hw03-unnamed-chunk-13-1.png" target="_blank"><img src="assets/fig/hw03-unnamed-chunk-13-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<p>說明：</p>
+<ul>
+<li><strong>肘部法則</strong>：用 <a class="fnref" href="ch03.html#s3-6-1" title="課程：第 3 章 3.6・for：已知要重複幾次"><code>for</code></a> 迴圈對 k = 1～10 各跑一次 K-means，把總群內平方和 <code>$tot.withinss</code> 存進向量，再用 <code>plot(type = &quot;b&quot;)</code> 畫成折線圖（<a href="ch09.html#s9-4">第 9 章 9.4</a> 課後題的做法）。<code>fviz_nbclust(method = &quot;wss&quot;)</code> 會先算 20,000 筆兩兩之間的距離（需要好幾 GB 記憶體），所以這裡自己算。<code>-diff(wss)</code> 是「每多分一群減少多少」（<code>diff()</code> 是相鄰兩個值的差）。k 從 4 到 5 還能減少 13,528，5 到 6 之後每次只減少 9,095、7,179……曲線在 k = 5 之後明顯變平。</li>
+<li><strong>輪廓係數</strong>：要算所有點兩兩之間的距離，20,000 筆太大，所以隨機抽 3,000 筆計算（<a href="ch09.html#s9-4">第 9 章 9.4</a> 的提醒）。輪廓係數在少數幾群時較高、之後下降，沒有在 5 以後明顯回升。</li>
+<li><strong>選 k = 5</strong>：兩種方法加上<strong>可解釋性</strong>——下一節會看到 5 群各自有清楚、互不重複的特徵（家庭、自駕、提早訂房、高需求、一般短住），群數再多就開始出現難以命名的小群。</li>
+</ul>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">km</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch09.html#s9-3-2" title="課程：第 9 章 9.3・用 kmeans() 分群"><span class="nf">kmeans</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">centers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">nstart</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">25</span><span class="p">,</span><span class="w"> </span><span class="n">iter.max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">50</span><span class="p">)</span>
+<span class="n">km</span><span class="o">$</span><span class="n">size</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 1206 5353 4477 7556 1408</code></pre>
+<p><code>nstart = 25</code> 試 25 組初始群心、保留最好的一組，避免停在不好的解（<a href="ch09.html#s9-3">第 9 章 9.3</a>）。</p>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>我選用 K-means 進行分群，因為 20,000 筆資料若使用階層式分群需計算約兩億個兩兩距離，K-means 的運算效率較高。分群變數選擇描述訂房特性的 8 個數值變數：提前訂房天數 lead_time、總住宿晚數 total_nights、成人數 adults、小孩數 kids、平均每日房價 adr、特殊需求數 total_of_special_requests、停車位數 required_car_parking_spaces 與訂房修改次數 booking_changes；依題目規定，is_canceled 不作為分群變數，而是留待分群後比較。由於各變數單位差異很大（提前天數可達數百天，停車位數只有 0 到 3），先以 scale() 將每個變數標準化為平均 0、標準差 1。群數的選擇方面，我以肘部法則判斷：用 for 迴圈對 k = 1 到 10 各執行一次 K-means，取出總群內平方和畫成折線圖，並計算每增加一群所減少的平方和：k 從 4 增加到 5 仍可減少約 13,528，但從 5 增加到 6、6 增加到 7 時只減少約 9,095 與 7,179，曲線在 k = 5 之後明顯趨緩。另外由於輪廓係數需要計算所有兩兩距離，我隨機抽取 3,000 筆計算平均輪廓係數作為參考。綜合肘部法則與各群是否具有清楚、可命名的特徵，最後選擇分為 5 群，並以 kmeans(X, centers = 5, nstart = 25) 嘗試 25 組初始群心後取最佳結果，各群筆數分別為 1206、5353、4477、7556、1408 筆。</p></div></div></section><section class="sec" id="s2-2" data-label="2.2 描述各群並命名"><h2><span class="num">2.2</span>描述各群並命名</h2><details class="refbox" open><summary>對應課程內容（3 處）</summary><ul><li><a href="ch02.html#s2-2-5">第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總</a>（group_by、summarise、n）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（mean）</li><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li></ul></details><div class="box task"><span class="tag">題目</span><p>描述各群特徵（例如各群的變數平均數、群內筆數），並為每一群命名（例如「提早規劃的家庭度假客」）。</p></div>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">hotels_s</span><span class="o">$</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">km</span><span class="o">$</span><span class="n">cluster</span>
+<span class="n">profile</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hotels_s</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">group_by</span></a><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">summarise</span></a><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">n</span></a><span class="p">(),</span>
+<span class="w">            </span><span class="n">lead_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">lead_time</span><span class="p">),</span><span class="w"> </span><span class="n">total_nights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">total_nights</span><span class="p">),</span>
+<span class="w">            </span><span class="n">adults</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">adults</span><span class="p">),</span><span class="w"> </span><span class="n">kids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">kids</span><span class="p">),</span><span class="w"> </span><span class="n">adr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">adr</span><span class="p">),</span>
+<span class="w">            </span><span class="n">requests</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">total_of_special_requests</span><span class="p">),</span>
+<span class="w">            </span><span class="n">parking</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">required_car_parking_spaces</span><span class="p">),</span>
+<span class="w">            </span><span class="n">changes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">booking_changes</span><span class="p">))</span>
+<a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="nf">as.data.frame</span><span class="p">(</span><span class="n">profile</span><span class="p">),</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##   cluster    n lead_time total_nights adults kids    adr requests
+## 1       1 1206     54.83         3.19   1.89 0.11 106.96     0.83
+## 2       2 5353     73.45         3.67   2.11 0.00 123.99     1.33
+## 3       3 4477    252.01         4.51   1.94 0.00  86.70     0.23
+## 4       4 7556     48.76         2.57   1.60 0.00  83.58     0.15
+## 5       5 1408     91.93         3.91   1.94 1.46 158.75     0.91
+##   parking changes
+## 1    1.00    0.44
+## 2    0.00    0.23
+## 3    0.00    0.17
+## 4    0.00    0.18
+## 5    0.05    0.39</code></pre>
+<p>各群「標準化後」的群心（0 是全體平均，正的高於平均、負的低於平均），看每一群哪裡特別突出：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">km</span><span class="o">$</span><span class="n">centers</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##   lead_time total_nights adults  kids   adr total_of_special_requests
+## 1     -0.46        -0.09   0.05  0.00  0.11                      0.32
+## 2     -0.29         0.10   0.46 -0.27  0.46                      0.95
+## 3      1.39         0.43   0.16 -0.27 -0.32                     -0.44
+## 4     -0.52        -0.34  -0.46 -0.27 -0.38                     -0.54
+## 5     -0.12         0.19   0.15  3.31  1.19                      0.42
+##   required_car_parking_spaces booking_changes
+## 1                        3.83            0.33
+## 2                       -0.26            0.01
+## 3                       -0.26           -0.07
+## 4                       -0.26           -0.07
+## 5                       -0.06            0.26</code></pre>
+<p>依各群最突出的特徵命名：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="c1"># 依上面兩張表，看每一群最突出的特徵來命名（順序對應第 1～5 群）</span>
+<span class="n">segment_name</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"自駕度假客"</span><span class="p">,</span><span class="w">          </span><span class="c1"># 第 1 群：停車位 1.00</span>
+<span class="w">                  </span><span class="s">"重視細節的高需求客"</span><span class="p">,</span><span class="w">  </span><span class="c1"># 第 2 群：特殊需求最多</span>
+<span class="w">                  </span><span class="s">"提早規劃的長住客"</span><span class="p">,</span><span class="w">    </span><span class="c1"># 第 3 群：提前天數最長、住最久</span>
+<span class="w">                  </span><span class="s">"臨時短住的一般散客"</span><span class="p">,</span><span class="w">  </span><span class="c1"># 第 4 群：提前天數短、房價最低</span>
+<span class="w">                  </span><span class="s">"親子家庭客"</span><span class="p">)</span><span class="w">          </span><span class="c1"># 第 5 群：小孩最多、房價最高</span>
+<span class="n">profile</span><span class="o">$</span><span class="n">name</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">segment_name</span>
+<span class="n">profile</span><span class="p">[,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"cluster"</span><span class="p">,</span><span class="w"> </span><span class="s">"name"</span><span class="p">,</span><span class="w"> </span><span class="s">"n"</span><span class="p">)]</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 5 × 3
+##   cluster name                   n
+##     &lt;int&gt; &lt;chr&gt;              &lt;int&gt;
+## 1       1 自駕度假客          1206
+## 2       2 重視細節的高需求客  5353
+## 3       3 提早規劃的長住客    4477
+## 4       4 臨時短住的一般散客  7556
+## 5       5 親子家庭客          1408</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">hotels_s</span><span class="o">$</span><span class="n">segment</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">segment_name</span><span class="p">[</span><span class="n">hotels_s</span><span class="o">$</span><span class="n">cluster</span><span class="p">]</span>
+</code></pre></div>
+<p>說明：</p>
+<ul>
+<li>把群編號加回資料（<code>hotels_s$cluster &lt;- km$cluster</code>），再用 <code>group_by(cluster) %&gt;% summarise()</code> 以<strong>原始單位</strong>計算各群筆數與平均，比標準化的數字好懂（<a href="ch09.html#s9-6">第 9 章 9.6</a>）。</li>
+<li><code>km$centers</code> 是標準化後的群心，可以看出每一群在哪個變數特別高或低（例如第 1 群的停車位遠高於平均）。</li>
+<li>依兩張表的特徵替每一群取名字，存成向量 <code>segment_name</code>；<code>segment_name[hotels_s$cluster]</code> 用群編號當索引，把名稱對回每一筆訂房（<a href="ch01.html#s1-2">第 1 章 1.2</a> 的索引）。</li>
+</ul>
+<p>五個客群：</p>
+<ul>
+<li><strong>臨時短住的一般散客</strong>（7,556 筆，最大群）：提前約 49 天訂房、住 2.6 晚，房價 84 歐元最低，幾乎沒有特殊需求。</li>
+<li><strong>重視細節的高需求客</strong>（5,353 筆）：平均 1.33 個特殊需求（最高），房價 124 歐元偏高，成人數最多。</li>
+<li><strong>提早規劃的長住客</strong>（4,477 筆）：平均提前 252 天訂房（將近 8 個月），住 4.5 晚最久，但房價 87 歐元偏低、特殊需求少。</li>
+<li><strong>親子家庭客</strong>（1,408 筆）：平均帶 1.46 個小孩，房價 159 歐元最高（家庭房、旺季），特殊需求也多。</li>
+<li><strong>自駕度假客</strong>（1,206 筆）：每筆都需要停車位（平均 1 個），訂房修改次數較多。</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>我將分群結果加回資料，以 group_by() 與 summarise() 計算各群筆數及各變數在原始單位下的平均，並以標準化後的群心比較每一群相對於全體平均的特徵，再依各群最突出的特徵命名。第一群為「臨時短住的一般散客」，共 7,556 筆，是人數最多的一群，平均提前 49 天訂房、住 2.6 晚，平均房價 84 歐元為各群最低，幾乎沒有特殊需求。第二群為「重視細節的高需求客」，共 5,353 筆，平均有 1.33 個特殊需求，為各群最高，平均房價 124 歐元也偏高。第三群為「提早規劃的長住客」，共 4,477 筆，平均提前 252 天訂房、住 4.5 晚，是提前最久、住最久的一群，但平均房價只有 87 歐元，特殊需求也少。第四群為「親子家庭客」，共 1,408 筆，平均帶 1.46 位小孩，平均房價 159 歐元為各群最高，特殊需求也較多。第五群為「自駕度假客」，共 1,206 筆，平均需要 1 個停車位，訂房修改次數也較多。</p></div></div></section><section class="sec" id="s2-3" data-label="2.3 各群的取消率、飯店類型與市場區隔"><h2><span class="num">2.3</span>各群的取消率、飯店類型與市場區隔</h2><details class="refbox" open><summary>對應課程內容（10 處）</summary><ul><li><a href="ch02.html#s2-2-5">第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總</a>（group_by、summarise、n）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（mean）</li><li><a href="ch02.html#s2-2-4">第 2 章 2.2・arrange()：排序</a>（arrange）</li><li><a href="ch01.html#s1-8-4">第 1 章 1.8・快速摘要一份真實資料</a>（table）</li><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li><li><a href="ch01.html#s1-3-3">第 1 章 1.3・合併與列行統計</a>（rowSums）</li><li><a href="ch05.html#s5-3-1">第 5 章 5.3・散佈圖：把第三個變數放進顏色和形狀</a>（ggplot、aes）</li><li><a href="ch05.html#s5-2">第 5 章 5.2・依變數個數與型別選圖</a>（geom_bar）</li><li><a href="ch05.html#s5-6-5">第 5 章 5.6・顧客總消費排序</a>（coord_flip）</li><li><a href="ch05.html#s5-3-4">第 5 章 5.3・折線圖、並排長條圖與圖例文字</a>（labs）</li></ul></details><div class="box task"><span class="tag">題目</span><p>比較各群的取消率、hotel（City／Resort）與 market_segment 組成。</p></div>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">seg_summary</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hotels_s</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">group_by</span></a><span class="p">(</span><span class="n">segment</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">summarise</span></a><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">n</span></a><span class="p">(),</span>
+<span class="w">            </span><span class="n">cancel_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">is_canceled</span><span class="p">),</span>
+<span class="w">            </span><span class="n">city_share</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">hotel</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"City Hotel"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-4" title="課程：第 2 章 2.2・arrange()：排序"><span class="nf">arrange</span></a><span class="p">(</span><span class="nf">desc</span><span class="p">(</span><span class="n">cancel_rate</span><span class="p">))</span>
+<span class="nf">as.data.frame</span><span class="p">(</span><span class="n">seg_summary</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##              segment    n cancel_rate city_share
+## 1   提早規劃的長住客 4477      0.5877     0.6603
+## 2         親子家庭客 1408      0.3849     0.6129
+## 3 臨時短住的一般散客 7556      0.3659     0.6987
+## 4 重視細節的高需求客 5353      0.2718     0.7060
+## 5         自駕度假客 1206      0.0000     0.2637</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">tab</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-8-4" title="課程：第 1 章 1.8・快速摘要一份真實資料"><span class="nf">table</span></a><span class="p">(</span><span class="n">hotels_s</span><span class="o">$</span><span class="n">segment</span><span class="p">,</span><span class="w"> </span><span class="n">hotels_s</span><span class="o">$</span><span class="n">market_segment</span><span class="p">)</span><span class="w">   </span><span class="c1"># 各群 × 各市場區隔的筆數</span>
+<span class="n">tab</span>
+</code></pre></div>
+<pre class="out"><code>##                     
+##                      Aviation Complementary Corporate Direct Groups
+##   提早規劃的長住客          1             0        14    153   1651
+##   臨時短住的一般散客       32            66       751    872   1438
+##   自駕度假客                1            20       105    326     55
+##   親子家庭客                0             2         5    233      9
+##   重視細節的高需求客        4            15        38    470    157
+##                     
+##                      Offline TA/TO Online TA
+##   提早規劃的長住客            1533      1125
+##   臨時短住的一般散客          1888      2509
+##   自駕度假客                    97       602
+##   親子家庭客                   101      1058
+##   重視細節的高需求客           441      4228</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">tab</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-3-3" title="課程：第 1 章 1.3・合併與列行統計"><span class="nf">rowSums</span></a><span class="p">(</span><span class="n">tab</span><span class="p">),</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w">                               </span><span class="c1"># 除以每一列的總數 = 群內比例</span>
+</code></pre></div>
+<pre class="out"><code>##                     
+##                      Aviation Complementary Corporate Direct Groups
+##   提早規劃的長住客      0.000         0.000     0.003  0.034  0.369
+##   臨時短住的一般散客    0.004         0.009     0.099  0.115  0.190
+##   自駕度假客            0.001         0.017     0.087  0.270  0.046
+##   親子家庭客            0.000         0.001     0.004  0.165  0.006
+##   重視細節的高需求客    0.001         0.003     0.007  0.088  0.029
+##                     
+##                      Offline TA/TO Online TA
+##   提早規劃的長住客           0.342     0.251
+##   臨時短住的一般散客         0.250     0.332
+##   自駕度假客                 0.080     0.499
+##   親子家庭客                 0.072     0.751
+##   重視細節的高需求客         0.082     0.790</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><a class="fnref" href="ch05.html#s5-3-1" title="課程：第 5 章 5.3・散佈圖：把第三個變數放進顏色和形狀"><span class="nf">ggplot</span></a><span class="p">(</span><span class="n">hotels_s</span><span class="p">,</span><span class="w"> </span><a class="fnref" href="ch05.html#s5-3-1" title="課程：第 5 章 5.3・散佈圖：把第三個變數放進顏色和形狀"><span class="nf">aes</span></a><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">segment</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">market_segment</span><span class="p">))</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><a class="fnref" href="ch05.html#s5-2" title="課程：第 5 章 5.2・依變數個數與型別選圖"><span class="nf">geom_bar</span></a><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"fill"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><a class="fnref" href="ch05.html#s5-6-5" title="課程：第 5 章 5.6・顧客總消費排序"><span class="nf">coord_flip</span></a><span class="p">()</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><a class="fnref" href="ch05.html#s5-3-4" title="課程：第 5 章 5.3・折線圖、並排長條圖與圖例文字"><span class="nf">labs</span></a><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"proportion"</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"market_segment"</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/hw03-unnamed-chunk-23-1.png" target="_blank"><img src="assets/fig/hw03-unnamed-chunk-23-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<p>說明：</p>
+<ul>
+<li><strong>取消率</strong>：<code>mean(is_canceled)</code> 是各群取消的比例；<strong>City Hotel 比例</strong>：<code>mean(hotel == &quot;City Hotel&quot;)</code>。</li>
+<li><strong>市場區隔組成</strong>：<code>table(群, 市場區隔)</code> 做成交叉表（<a href="ch01.html#s1-8">第 1 章 1.8</a>），每一格除以該列的總數（<a class="fnref" href="ch01.html#s1-3-3" title="課程：第 1 章 1.3・合併與列行統計"><code>rowSums()</code></a>），就是「在這一群中的比例」。<code>geom_bar(position = &quot;fill&quot;)</code> 把每根長條拉到 100%，比較組成；<a class="fnref" href="ch05.html#s5-6-5" title="課程：第 5 章 5.6・顧客總消費排序"><code>coord_flip()</code></a> 轉成橫向，名稱比較好讀。</li>
+<li><strong>結果</strong>：<ul>
+<li>「提早規劃的長住客」取消率最高，58.8%，市場區隔以團體（Groups，37%）與傳統旅行社（Offline TA/TO，34%）為主，團體比例是各群最高；其他各群都以線上旅行社（Online TA）為最大宗。</li>
+<li>「親子家庭客」取消率 38.5%、「臨時短住的一般散客」36.6%，兩者都以 Online TA 為主。</li>
+<li>「重視細節的高需求客」取消率 27.2%，明顯較低；Online TA 比例 79% 為各群最高——有提出需求的線上訂房者，入住意願較確定。</li>
+<li>「自駕度假客」取消率 0%，幾乎不取消；City Hotel 只占 26%，以 Resort Hotel 為主，直客（Direct）比例 27% 是各群最高。</li>
+<li>其他四群都是 City Hotel 占六到七成，和全體組成相近。</li>
+</ul>
+</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>我以 group_by() 與 summarise() 計算各群的取消率（is_canceled 的平均）與 City Hotel 所占比例，並用 table() 做出各群與各市場區隔的交叉表，再除以每一群的總筆數換算成群內比例，另以 geom_bar(position = "fill") 畫出各群市場區隔組成的百分比堆疊長條圖。結果顯示，取消率最高的是「提早規劃的長住客」，達 58.8%，其市場區隔以團體訂房（37%）與傳統旅行社（34%）為主，團體比例為各群最高，其他各群則都以線上旅行社為最大宗；「親子家庭客」與「臨時短住的一般散客」的取消率分別為 38.5% 與 36.6%，兩者都以線上旅行社（Online TA）為主要來源；「重視細節的高需求客」的取消率較低，為 27.2%，雖然線上旅行社比例高達 79%，但提出特殊需求代表入住意願較確定；「自駕度假客」的取消率只有 0%，幾乎不會取消，而且只有 26% 是城市飯店，以度假飯店為主，直接向飯店訂房（Direct）的比例 27% 為各群最高。其餘四群的城市飯店比例都在六到七成之間，與全體組成相近。</p></div></div></section><section class="sec" id="s2-4" data-label="2.4 給飯店的商業策略建議"><h2><span class="num">2.4</span>給飯店的商業策略建議</h2><details class="refbox" open><summary>對應課程內容（2 處）</summary><ul><li><a href="ch02.html#s2-2-5">第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總</a>（group_by、summarise）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（mean）</li></ul></details><div class="box task"><span class="tag">題目</span><p>針對不同客群，提出給飯店的商業策略建議（例如定價、訂金政策、訂房通路、加購服務）。建議需對應 (b)、(c) 的分析結果。</p></div>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">hotels_s</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">group_by</span></a><span class="p">(</span><span class="n">segment</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><span class="nf">summarise</span></a><span class="p">(</span><span class="n">cancel_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">is_canceled</span><span class="p">),</span>
+<span class="w">            </span><span class="n">non_refund</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">deposit_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"Non Refund"</span><span class="p">),</span>
+<span class="w">            </span><span class="n">repeated</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">is_repeated_guest</span><span class="p">),</span>
+<span class="w">            </span><span class="n">prev_cancel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">previous_cancellations</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">),</span>
+<span class="w">            </span><span class="n">domestic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-2-5" title="課程：第 1 章 1.2・常用的摘要函數"><span class="nf">mean</span></a><span class="p">(</span><span class="n">domestic</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"PRT"</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 5 × 6
+##   segment           cancel_rate non_refund repeated prev_cancel domestic
+##   &lt;chr&gt;                   &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;
+## 1 提早規劃的長住客        0.588   0.315     0.0105      0.145      0.501
+## 2 臨時短住的一般散…       0.366   0.131     0.0532      0.0461     0.503
+## 3 自駕度假客              0       0         0.0871      0.0158     0.410
+## 4 親子家庭客              0.385   0.000710  0.00781     0.00923    0.282
+## 5 重視細節的高需求…       0.272   0.00579   0.0149      0.0116     0.229</code></pre>
+<p>補充這張表是為了讓建議有根據：決策樹顯示訂金類型、過去取消紀錄、本國旅客與取消高度相關，所以再看各群在這些變數上的比例。「提早規劃的長住客」中訂金不可退的比例 31%，是各群最高（其他群多在 1% 以下，一般散客也只有 13%）；本國旅客約占一半（50%），和一般散客相當、高於其他三群。這兩個特徵正好都是決策樹中取消率高的分支。</p>
+<p>建議（列點版）：</p>
+<ul>
+<li><strong>提早規劃的長住客</strong>（取消率最高）：<ul>
+<li>訂金政策：提前很久的訂房設「分段訂金」——例如入住前 60 天收第一期，比一次收全額不可退的訂金更容易確認意願；對團體與旅行社的大量占房訂定「釋出期限」，逾期未確認自動釋出。</li>
+<li>超賣：這一群的房間可以適度超賣，超賣比例參考決策樹預測的取消機率。</li>
+<li>入住前 30、14 天主動發確認信，及早發現會取消的訂房、重新上架。</li>
+</ul>
+</li>
+<li><strong>臨時短住的一般散客</strong>（人數最多、取消率中等）：<ul>
+<li>在線上旅行社平台以「不可退款、較低價」與「可取消、較高價」兩種價格方案讓顧客自選（差別定價），把取消風險轉成收入。</li>
+<li>推會員直訂優惠，把線上旅行社的顧客轉到自家官網，降低佣金與取消率。</li>
+</ul>
+</li>
+<li><strong>親子家庭客</strong>（房價最高）：<ul>
+<li>推出家庭套裝（加床、兒童早餐、親子活動），提高客單價；加購服務也能提高入住意願、降低取消。</li>
+<li>搭配可退訂金，降低家長因小孩生病等突發狀況而不敢訂房的顧慮。</li>
+</ul>
+</li>
+<li><strong>重視細節的高需求客</strong>（取消率低、願意付較高房價）：<ul>
+<li>訂房流程中主動詢問需求（高樓層、床型、紀念日布置），因為決策樹顯示「有特殊需求」的訂房取消率較低。</li>
+<li>推升等與加購服務（景觀房、早餐、晚退房）。</li>
+</ul>
+</li>
+<li><strong>自駕度假客</strong>（幾乎不取消、以度假飯店與直客為主）：<ul>
+<li>維持停車位供給，推「住宿＋停車」套裝與回頭客優惠，鞏固這群穩定的直客。</li>
+<li>不需要嚴格的訂金政策，避免影響滿意度。</li>
+</ul>
+</li>
+<li><strong>整體</strong>：把決策樹的取消預測用在每一筆新訂房上——預測會取消的訂房提高訂金或加強確認，預測不會取消的提供彈性條件；超賣房數則依預測取消數量決定。</li>
+</ul>
+<div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>根據決策樹與分群的結果，我對不同客群提出以下策略。第一，「提早規劃的長住客」取消率最高（58.8%），其中訂金不可退的比例（31%）為各群最高，本國旅客約占一半（50%），團體訂房比例也最高，這些特徵正好對應決策樹中取消率高的分支。建議對提前很久的訂房改採分段收取訂金，並對旅行社與團體的大量占房設定確認期限，逾期未確認即釋出房間；同時可依模型預測的取消機率對這一群適度超賣，並在入住前 30 天與 14 天主動發送確認通知，及早釋出可能取消的房間。第二，「臨時短住的一般散客」人數最多、房價最低、取消率約 37%，且以線上旅行社為主，建議在通路上同時提供「不可退款的較低價」與「可免費取消的較高價」兩種方案，以差別定價將取消風險轉為收入，並以會員直訂優惠將顧客導向官網。第三，「親子家庭客」房價最高、特殊需求多，建議推出包含加床、兒童早餐與親子活動的家庭套裝提高客單價，並搭配可退訂金，降低家長因突發狀況而取消的顧慮。第四，「重視細節的高需求客」取消率較低（27.2%）且願意支付較高房價，而決策樹也顯示有提出特殊需求的訂房較不會取消，因此建議在訂房流程中主動詢問需求，並推薦房型升等、景觀房與晚退房等加購服務。第五，「自駕度假客」幾乎不會取消（0%），以度假飯店與直接訂房為主，建議維持充足停車位並推出「住宿加停車」套裝與回頭客優惠，不需嚴格的訂金政策。整體而言，飯店可以將決策樹的預測套用在每一筆新訂房上，對預測會取消的訂房提高訂金或加強確認，並依預測的取消數量決定超賣房數，以降低空房損失。</p></div></div></section>
+<nav class="pager"><a class="prev" href="hw02.html">← 作業 2</a><a class="next" href="hw04.html">作業 4 →</a></nav></main>
+<script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
+<script src="assets/search.js?v=496b2db6"></script>
+<script src="assets/site.js?v=ba35a458"></script>
+</body></html>
