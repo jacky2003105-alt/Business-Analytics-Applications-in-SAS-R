@@ -15,8 +15,8 @@ if(window.renderMathInElement)renderMathInElement(document.body,{delimiters:[{le
 
 /* 複製程式碼 */
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.copy');if(!b)return;
- var t=b.parentNode.querySelector('pre').innerText;
- function done(){b.textContent='已複製';setTimeout(function(){b.textContent='複製'},1200);}
+ var src=b.parentNode.querySelector('.ptext, pre'),t=src.innerText.trim(),lab=b.getAttribute('data-l')||b.textContent;b.setAttribute('data-l',lab);
+ function done(){b.textContent='已複製';setTimeout(function(){b.textContent=lab},1200);}
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,function(){});
  else{var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}ta.remove();}});
 

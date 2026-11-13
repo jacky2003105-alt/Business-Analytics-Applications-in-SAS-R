@@ -152,3 +152,8 @@ a.fnref:hover{background:#e3eef8}
 .refbox{margin:4px 0 14px;padding:8px 14px;border:1px solid #cfe0ee;border-radius:10px;background:#f6fafd;font-size:15px}
 .refbox summary{cursor:pointer;font-weight:700;color:#1d5f8a}
 .refbox ul{margin:8px 0 2px;padding-left:20px}.refbox li{margin:3px 0}
+.box.paste{position:relative;border-left-color:#b3541e;background:#fffaf3;padding-right:16px}
+.box.paste .tag{background:#b3541e}
+.box.paste .copy{position:absolute;top:10px;right:12px;padding:3px 10px;border:1px solid #d9b48f;border-radius:6px;background:#fff;color:#7a3a12;font-size:13px;cursor:pointer}
+.box.paste .ptext{margin-top:8px;line-height:1.9}
+.box.paste .ptext code{background:none;border:0;padding:0;font-family:inherit;color:inherit}

@@ -2,7 +2,7 @@
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>第 2 章 資料轉換與整理：tidyverse｜商業分析：R課程筆記</title>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=2b412d6f">
+<link rel="stylesheet" href="assets/style.css?v=113869c6">
 </head><body data-page="ch02" data-mode="course">
 <div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
 <nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course" class=on>課程</a><a href="hw01.html" data-mode="hw">作業</a></nav><label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html" selected>第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
@@ -276,9 +276,9 @@
 ## posted2670    sfbay</code></pre>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">mydata</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">slice_max</span><span class="p">(</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="n">maker</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">)</span><span class="w">        </span><span class="c1"># 最大的 2 筆</span>
 </code></pre></div>
-<pre class="out"><code>##                maker price
-## posted6903  cadillac 3e+07
-## posted16005    honda 1e+07</code></pre>
+<pre class="out"><code>##                maker    price
+## posted6903  cadillac 30002500
+## posted16005    honda  9999999</code></pre>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">mydata</span><span class="w"> </span><span class="o">%&gt;%</span>
 <span class="w">  </span><span class="nf">mutate</span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">case_when</span><span class="p">(</span><span class="n">price</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">5000</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s">"low"</span><span class="p">,</span>
 <span class="w">                           </span><span class="n">price</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">20000</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s">"mid"</span><span class="p">,</span>
@@ -379,8 +379,8 @@ b. Create a new variable <code>total_sales</code> by summing the values of two n
 <pre class="out"><code>## [1] 8140</code></pre>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">mydata</span><span class="p">[</span><span class="nf">which.max</span><span class="p">(</span><span class="n">mydata</span><span class="o">$</span><span class="n">price</span><span class="p">),</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"header"</span><span class="p">,</span><span class="w"> </span><span class="s">"price"</span><span class="p">)]</span>
 </code></pre></div>
-<pre class="out"><code>##                            header price
-## posted6903 2002 Caddy Seville sls 3e+07</code></pre>
+<pre class="out"><code>##                            header    price
+## posted6903 2002 Caddy Seville sls 30002500</code></pre>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">mydata</span><span class="o">$</span><span class="n">price</span><span class="p">[</span><span class="nf">which.max</span><span class="p">(</span><span class="n">mydata</span><span class="o">$</span><span class="n">price</span><span class="p">)]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">median</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">6000</span><span class="p">,</span><span class="w"> </span><span class="m">30000</span><span class="p">))</span><span class="w">   </span><span class="c1"># 用合理價格區間的中位數取代</span>
 <span class="n">mydata</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">arrange</span><span class="p">(</span><span class="nf">desc</span><span class="p">(</span><span class="n">price</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="n">header</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">head</span><span class="p">(</span><span class="m">3</span><span class="p">)</span>
 </code></pre></div>
@@ -865,6 +865,6 @@ b. Create a new variable <code>total_sales</code> by summing the values of two n
 </ul></section>
 <nav class="pager"><a class="prev" href="ch01.html">← 第 1 章</a><a class="next" href="ch03.html">第 3 章 →</a></nav></main>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=79341520"></script>
-<script src="assets/site.js?v=a24020ba"></script>
+<script src="assets/search.js?v=5a082f62"></script>
+<script src="assets/site.js?v=ba35a458"></script>
 </body></html>
