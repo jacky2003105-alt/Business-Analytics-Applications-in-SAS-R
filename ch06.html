@@ -2,10 +2,10 @@
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>第 6 章 迴歸分析｜商業分析：R課程筆記</title>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=7cb3acbb">
-</head><body data-page="ch06">
+<link rel="stylesheet" href="assets/style.css?v=2b412d6f">
+</head><body data-page="ch06" data-mode="course">
 <div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
-<label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html" selected>第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
+<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course" class=on>課程</a><a href="hw01.html" data-mode="hw">作業</a></nav><label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html" selected>第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
 <main class="wrap"><header class="ch-head"><h1>第 6 章　迴歸分析</h1><details class="ch-toc"><summary>本章目錄（6 節）</summary><ol><li><a href="#s6-1"><span>6.1</span>簡單線性迴歸與 lm()</a></li><li><a href="#s6-2"><span>6.2</span>多元迴歸、類別變數與交互作用</a></li><li><a href="#s6-3"><span>6.3</span>迴歸假設與殘差診斷</a></li><li><a href="#s6-4"><span>6.4</span>模型選擇</a></li><li><a href="#s6-5"><span>6.5</span>預測與用矩陣算係數</a></li><li><a href="#s6-6"><span>6.6</span>本章小結</a></li></ol></details></header>
 <div class="ch-intro"><p><strong>迴歸</strong>（regression）用一個或多個<strong>預測變數</strong>（predictor，自變數 X）來解釋或預測一個<strong>反應變數</strong>（response，依變數 Y）。它有三個用途：<strong>推論</strong>（X 和 Y 之間到底有沒有關係）、<strong>描述</strong>（關係有多強、方向為何）、<strong>預測</strong>（給新的 X，Y 大概是多少）。這一章學最基礎也最重要的<strong>線性迴歸</strong>：怎麼配適、怎麼讀報表、類別變數與交互作用、檢查假設、選模型、做預測。</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
@@ -579,6 +579,6 @@
 </ul></section>
 <nav class="pager"><a class="prev" href="ch05.html">← 第 5 章</a><a class="next" href="ch07.html">第 7 章 →</a></nav></main>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=7a3ed758"></script>
-<script src="assets/site.js?v=24ecedd3"></script>
+<script src="assets/search.js?v=79341520"></script>
+<script src="assets/site.js?v=a24020ba"></script>
 </body></html>

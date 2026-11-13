@@ -2,10 +2,10 @@
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>第 3 章 自訂函數與流程控制｜商業分析：R課程筆記</title>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=7cb3acbb">
-</head><body data-page="ch03">
+<link rel="stylesheet" href="assets/style.css?v=2b412d6f">
+</head><body data-page="ch03" data-mode="course">
 <div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
-<label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html" selected>第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
+<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course" class=on>課程</a><a href="hw01.html" data-mode="hw">作業</a></nav><label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html" selected>第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
 <main class="wrap"><header class="ch-head"><h1>第 3 章　自訂函數與流程控制</h1><details class="ch-toc"><summary>本章目錄（8 節）</summary><ol><li><a href="#s3-1"><span>3.1</span>自訂函數</a></li><li><a href="#s3-2"><span>3.2</span>預設引數與回傳多個結果</a></li><li><a href="#s3-3"><span>3.3</span>輸出與訊息：print、cat、message、warning、stop</a></li><li><a href="#s3-4"><span>3.4</span>布林與邏輯運算</a></li><li><a href="#s3-5"><span>3.5</span>條件判斷：if、ifelse、switch</a></li><li><a href="#s3-6"><span>3.6</span>迴圈：for、while、repeat</a></li><li><a href="#s3-7"><span>3.7</span>隱含迴圈：apply 家族</a></li><li><a href="#s3-8"><span>3.8</span>本章小結</a></li></ol></details></header>
 <div class="ch-intro"><p>同一段程式要重複用好幾次、或邏輯開始變複雜時，就該把它包成<strong>函數</strong>（function），並用<strong>流程控制</strong>（control flow）決定程式要走哪條路、要重複幾次。這一章學會：自己寫函數、設定預設引數、回傳多個結果；用 <code>print()</code>、<code>cat()</code>、<code>message()</code>、<code>warning()</code>、<code>stop()</code> 輸出訊息；用 if、ifelse、switch 做判斷；用 for、while、repeat 做迴圈；最後用 apply 家族取代迴圈。</p>
 <p>期末考的寫程式題有兩題就出在這一章：寫一個回傳 list 的函數、寫一個有預設引數的函數。</p></div><section class="sec" id="s3-1" data-label="3.1 自訂函數"><h2><span class="num">3.1</span>自訂函數</h2><h3 id="s3-1-1">函數的三個部分</h3>
@@ -760,6 +760,6 @@ b. Extend the function from (a) to also include a greeting message, such as "Hel
 </ul></section>
 <nav class="pager"><a class="prev" href="ch02.html">← 第 2 章</a><a class="next" href="ch04.html">第 4 章 →</a></nav></main>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=7a3ed758"></script>
-<script src="assets/site.js?v=24ecedd3"></script>
+<script src="assets/search.js?v=79341520"></script>
+<script src="assets/site.js?v=a24020ba"></script>
 </body></html>

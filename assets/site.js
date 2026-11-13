@@ -4,6 +4,10 @@
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null}}
 var PAGE=document.body.getAttribute('data-page')||'index';
 var sel=document.getElementById('unitSelect');
+/* 課程／作業切換：記住各自最後看的頁面 */
+var MODE=document.body.getAttribute('data-mode')||'course';
+if(PAGE!=='index')ls('ba:last:'+MODE,PAGE+'.html');
+[].forEach.call(document.querySelectorAll('.mode a'),function(a){var m=a.getAttribute('data-mode'),last=ls('ba:last:'+m);if(last&&m!==MODE)a.href=last;});
 if(sel)sel.addEventListener('change',function(){location.href=sel.value;});
 
 /* 數學 */

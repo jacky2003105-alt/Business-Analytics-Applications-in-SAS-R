@@ -2,10 +2,10 @@
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>第 1 章 R 基礎與資料處理｜商業分析：R課程筆記</title>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=7cb3acbb">
-</head><body data-page="ch01">
+<link rel="stylesheet" href="assets/style.css?v=2b412d6f">
+</head><body data-page="ch01" data-mode="course">
 <div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
-<label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html" selected>第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
+<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course" class=on>課程</a><a href="hw01.html" data-mode="hw">作業</a></nav><label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html" selected>第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
 <main class="wrap"><header class="ch-head"><h1>第 1 章　R 基礎與資料處理</h1><details class="ch-toc"><summary>本章目錄（10 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>R 的第一步：物件、函數與套件</a></li><li><a href="#s1-2"><span>1.2</span>向量 Vectors</a></li><li><a href="#s1-3"><span>1.3</span>矩陣與陣列</a></li><li><a href="#s1-4"><span>1.4</span>串列 Lists</a></li><li><a href="#s1-5"><span>1.5</span>因子 Factors</a></li><li><a href="#s1-6"><span>1.6</span>資料框 Data Frames</a></li><li><a href="#s1-7"><span>1.7</span>排序與搜尋：sort、order、rank、which</a></li><li><a href="#s1-8"><span>1.8</span>讀取與匯出外部資料</a></li><li><a href="#s1-9"><span>1.9</span>缺失值 Missing Values</a></li><li><a href="#s1-10"><span>1.10</span>本章小結與課後練習</a></li></ol></details></header>
 <div class="ch-intro"><p>這一章從「R 是怎麼運作的」開始，一路介紹 R 最核心的資料結構：向量、矩陣、陣列、串列、因子、資料框，最後學會讀檔、檢視資料、處理缺失值。後面每一章做的事（整理資料、畫圖、跑迴歸），本質上都是在操作這些結構，所以這章是整門課的地基。</p>
 <p>建議的讀法：打開 RStudio，把每一段灰底程式碼複製到 Console（或新開一個 R Script，選取後按 Ctrl/Cmd + Enter）執行，對照下方以 <code>##</code> 開頭的輸出是不是一樣。</p>
@@ -113,6 +113,29 @@
 </code></pre></div>
 <pre class="out"><code>## [1] 3</code></pre>
 <p><code>is.xxx()</code> 是「問它是不是 xxx」，回傳 TRUE/FALSE；<code>as.xxx()</code> 是「把它轉成 xxx」。讀進來的資料型別不對（例如年齡被讀成文字）是最常見的錯誤來源，之後會一直用到這兩組函數。</p>
+<h3 id="s1-1-4">日期型別：<code>as.Date()</code></h3>
+<p>日期在檔案裡常以文字出現（例如 "2025/1/15"）。文字只能照字元排序，"2025/1/10" 會排在 "2025/1/2" 前面；轉成<strong>日期型別</strong>（Date）後，R 才知道它是時間，能正確排序、相減算天數、畫成時間軸。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"2025/1/10"</span><span class="p">,</span><span class="w"> </span><span class="s">"2025/1/2"</span><span class="p">,</span><span class="w"> </span><span class="s">"2025/2/1"</span><span class="p">)</span>
+<span class="nf">sort</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w">                                   </span><span class="c1"># 文字排序：順序不對</span>
+</code></pre></div>
+<pre class="out"><code>## [1] &quot;2025/1/10&quot; &quot;2025/1/2&quot;  &quot;2025/2/1&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">dd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.Date</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"%Y/%m/%d"</span><span class="p">)</span><span class="w">     </span><span class="c1"># format 描述原本的寫法：年/月/日</span>
+<span class="n">dd</span>
+</code></pre></div>
+<pre class="out"><code>## [1] &quot;2025-01-10&quot; &quot;2025-01-02&quot; &quot;2025-02-01&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">class</span><span class="p">(</span><span class="n">dd</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] &quot;Date&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">sort</span><span class="p">(</span><span class="n">dd</span><span class="p">)</span><span class="w">                                  </span><span class="c1"># 日期排序：正確</span>
+</code></pre></div>
+<pre class="out"><code>## [1] &quot;2025-01-02&quot; &quot;2025-01-10&quot; &quot;2025-02-01&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">dd</span><span class="p">[</span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dd</span><span class="p">[</span><span class="m">2</span><span class="p">]</span><span class="w">                             </span><span class="c1"># 兩個日期相差幾天</span>
+</code></pre></div>
+<pre class="out"><code>## Time difference of 30 days</code></pre>
+<ul>
+<li><code>format</code> 要和原本的寫法一致：<code>%Y</code> 四位數年、<code>%m</code> 月、<code>%d</code> 日，中間的分隔符號（<code>/</code> 或 <code>-</code>）照抄。原本就是 "2025-01-02" 這種標準寫法時，可以直接 <code>as.Date(x)</code>。</li>
+<li>日期印出來一律是「年-月-日」格式，所以之後可以用 <code>separate(date, into = c(&quot;year&quot;, &quot;month&quot;, &quot;day&quot;), sep = &quot;-&quot;)</code>（第 2 章）拆出月份。</li>
+</ul>
 <p>字串裡要放引號，可以用另一種引號包起來，或用反斜線 <code>\</code> <strong>跳脫</strong>：</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="s">"I'm lovin it"</span><span class="w">            </span><span class="c1"># 外面用雙引號，裡面的單引號沒問題</span>
 </code></pre></div>
@@ -127,7 +150,7 @@
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">writeLines</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">             </span><span class="c1"># writeLines() 照「真正的文字」輸出</span>
 </code></pre></div>
 <pre class="out"><code>## I &quot;love&quot; it</code></pre>
-<h3 id="s1-1-4">函數與說明文件</h3>
+<h3 id="s1-1-5">函數與說明文件</h3>
 <p>R 的工作幾乎都靠<strong>函數</strong>完成。函數的格式是 <code>函數名稱(引數1, 引數2, ...)</code>：</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">round</span><span class="p">(</span><span class="m">3.14159</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">              </span><span class="c1"># 第 1 個引數是數字，第 2 個是保留幾位小數</span>
 </code></pre></div>
@@ -139,7 +162,7 @@
 </code></pre></div>
 <pre class="out"><code>## [1]  1  4  7 10</code></pre>
 <p>不知道一個函數怎麼用，就在 Console 輸入 <code>?函數名稱</code> 或 <code>help(函數名稱)</code>，例如 <code>?seq</code>，右下角會打開說明文件，裡面的 Arguments 列出所有引數、Examples 有範例可以直接跑。</p>
-<h3 id="s1-1-5">套件：先安裝，再載入</h3>
+<h3 id="s1-1-6">套件：先安裝，再載入</h3>
 <p>R 本身附的函數叫 base R；更多功能來自別人寫好的<strong>套件</strong>（package）。使用分兩步：</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">install.packages</span><span class="p">(</span><span class="s">"tidyverse"</span><span class="p">)</span><span class="w">   </span><span class="c1"># 第 1 步：下載安裝（一台電腦只要做一次，名稱要加引號）</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">              </span><span class="c1"># 第 2 步：載入（每次重開 R 都要做）</span>
@@ -1059,6 +1082,6 @@
 <p>第 4 題（缺失值兩種處理）見 1.9 最後一題。</p></section>
 <nav class="pager"><span></span><a class="next" href="ch02.html">第 2 章 →</a></nav></main>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=7a3ed758"></script>
-<script src="assets/site.js?v=24ecedd3"></script>
+<script src="assets/search.js?v=79341520"></script>
+<script src="assets/site.js?v=a24020ba"></script>
 </body></html>

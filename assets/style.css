@@ -141,3 +141,14 @@ td code{white-space:nowrap}
   p .katex,li .katex,td .katex{display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle}
 }
 .card h3{border-top:0!important;padding-top:0!important;margin-top:0!important}
+.mode{display:inline-flex;border:1px solid #3a5674;border-radius:9px;overflow:hidden;margin-right:6px}
+.mode a{padding:8px 14px;color:#cfe0f0;text-decoration:none;font-size:15px;font-weight:700}
+.mode a.on{background:#2f7d4f;color:#fff}
+.mode a:not(.on):hover{background:#1d3550}
+@media(max-width:650px){.topbar .mode{flex:1 1 100%;margin-right:0}.topbar .mode a{flex:1 1 0;text-align:center}}
+.box.task{border-left-color:#5b4b9a;background:#f4f2fb}.box.task .tag{background:#5b4b9a}
+a.fnref{color:inherit;text-decoration:underline dotted #1d5f8a;text-underline-offset:3px}
+a.fnref:hover{background:#e3eef8}
+.refbox{margin:4px 0 14px;padding:8px 14px;border:1px solid #cfe0ee;border-radius:10px;background:#f6fafd;font-size:15px}
+.refbox summary{cursor:pointer;font-weight:700;color:#1d5f8a}
+.refbox ul{margin:8px 0 2px;padding-left:20px}.refbox li{margin:3px 0}
