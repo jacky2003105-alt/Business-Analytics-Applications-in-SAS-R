@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>商業分析：R｜課程筆記｜商業分析：R課程筆記</title>
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css?v=7cb3acbb">
+</head><body data-page="index">
+<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
+<label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
+<main class="wrap"><header class="ch-head"><h1>商業分析：R｜課程筆記</h1></header>
+
+<div class="ch-intro">
+<p>這是「商業分析：R」第 1～8 章的課程筆記。內容以老師的網頁版講義為骨架，從完全沒寫過 R 的角度重新寫：每個函數都說明「它在做什麼、引數是什麼意思、輸出要怎麼看」。所有程式碼都實際跑過，灰底是程式，下方以 <code>##</code> 開頭的是 R 的輸出，圖也是 R 跑出來的。</p>
+<p>每一節最後有一組 <b>Concept Check</b>，題型照期末考考古題的四種出法：英文選擇題、填空（填函數名稱）、簡答（用自己的話解釋）、寫程式。題目是自編的練習，不是老師出的題目；考古題真的出過的觀念，正文會用橘色的「考古題出過」框標出來。</p>
+</div>
+<section class="sec" id="chapters"><h2>章節</h2><div class="cards"><a class="card" href="ch01.html"><h3>第 1 章　R 基礎與資料處理</h3><p>向量、矩陣、串列、因子、資料框；讀檔、檢視資料、處理缺失值 NA。</p></a><a class="card" href="ch02.html"><h3>第 2 章　資料轉換與整理：tidyverse</h3><p>管線 %&gt;%、dplyr 六個動詞、tidyr 重塑資料、join 合併資料表。</p></a><a class="card" href="ch03.html"><h3>第 3 章　自訂函數與流程控制</h3><p>自訂函數、預設引數、print／cat／message／warning／stop、if、for、while、apply 家族。</p></a><a class="card" href="ch04.html"><h3>第 4 章　機率分配</h3><p>d／p／q／r 四個前綴；二項分配、常態分配，用模擬對照理論。</p></a><a class="card" href="ch05.html"><h3>第 5 章　視覺化與探索式資料分析</h3><p>EDA 依變數選圖、R 內建繪圖、ggplot2 圖層、hjust／vjust、資料轉換。</p></a><a class="card" href="ch06.html"><h3>第 6 章　迴歸分析</h3><p>lm()、summary 怎麼讀、類別變數與交互作用、殘差診斷、AIC 與逐步迴歸。</p></a><a class="card" href="ch07.html"><h3>第 7 章　廣義線性模型 GLM</h3><p>glm() 的分配與連結函數；邏輯斯迴歸、勝算比、混淆矩陣、ROC；Poisson 迴歸。</p></a><a class="card" href="ch08.html"><h3>第 8 章　訓練集、測試集與重抽樣</h3><p>訓練集／測試集、K 折交叉驗證、LOOCV、bootstrap。</p></a></div></section>
+
+<section class="sec" id="howto"><h2>怎麼用這個網站</h2>
+<ul>
+<li><b>選擇單元</b>：頁首右上角的下拉選單可以跳到任何一章。</li>
+<li><b>搜尋</b>：頁首「搜尋」可以跨章搜尋，例如輸入 <code>filter</code>、<code>迴圈</code>、<code>glm</code>。</li>
+<li><b>本頁大綱</b>：章節頁面按「本頁大綱」會列出這一章的所有節，點了就跳過去。</li>
+<li><b>解答</b>：每題下方有「隱藏解答／顯示解答」，想先自己作答就按頁首的「隱藏全部解答」。</li>
+<li><b>標記不熟</b>：每題左上角可以標「不熟」，勾選頁首「只看不熟」就只顯示那些題目（記在這台裝置的瀏覽器裡）。</li>
+<li><b>記住位置</b>：回到首頁時，上方會出現「上次讀到」的連結。</li>
+<li><b>複製程式碼</b>：程式碼區塊右上角的「複製」按鈕，貼到 RStudio 就能跑。</li>
+</ul></section>
+
+<section class="sec" id="setup"><h2>環境設定</h2>
+<p>先安裝 R 與 RStudio，再在 RStudio 的 Console 執行下面這段（只要做一次）：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code>install.packages(c(
+  "tidyverse",     # 第 2、4、5 章：dplyr、tidyr、ggplot2
+  "nycflights13",  # 第 2 章航班資料
+  "corrplot",      # 第 5 章相關圖
+  "broom", "car", "MASS", "foreign",   # 第 6 章
+  "AER", "pROC", "ISLR", "ISwR",       # 第 7 章
+  "boot"                               # 第 8 章
+))</code></pre></div>
+<p>每次開新的 R 工作階段，要用到的套件都要再 <code>library()</code> 一次。<code>install.packages()</code> 是「下載安裝」，<code>library()</code> 是「這次要用」——兩者常被搞混。</p>
+<p>讀檔前要讓 R 找得到檔案：把下面的資料檔放到同一個資料夾，在 RStudio 選 Session → Set Working Directory → Choose Directory 指到那個資料夾（等同 <code>setwd()</code>）。</p>
+</section>
+
+<section class="sec" id="data"><h2>課堂資料下載</h2><ul><li><a href="data/salesdata.csv" download>salesdata.csv</a>：第 5 章銷售資料 EDA</li><li><a href="data/Wholesale customers data.csv" download>Wholesale customers data.csv</a>：第 5 章課堂練習（批發商客戶）</li><li><a href="data/carsale.Rda" download>carsale.Rda</a>：第 2 章汽車銷售資料（載入後物件名稱是 mydata）</li><li><a href="data/lec2_data1.csv" download>lec2_data1.csv</a>：第 2 章 join：學生資料</li><li><a href="data/lec2_data2.csv" download>lec2_data2.csv</a>：第 2 章 join：Moodle 使用時間</li><li><a href="data/lec2_data3.csv" download>lec2_data3.csv</a>：第 2 章 join：課程代號</li><li><a href="data/kidiq.dta" download>kidiq.dta</a>：第 6、8 章（Stata 格式，用 foreign::read.dta 讀）</li><li><a href="data/sale.csv" download>sale.csv</a>：第 6 章課堂練習</li><li><a href="data/wine.csv" download>wine.csv</a>：第 6 章課堂練習</li></ul>
+<p>R 內建或套件附的資料（iris、mtcars、flights、CreditCard、Smarket 等）不用下載，<code>library()</code> 之後就能用。</p></section>
+
+<section class="sec" id="exam"><h2>期末考題型</h2>
+<p>考古題（Moodle 線上測驗）分四大部分：</p>
+<ul>
+<li><b>選擇題</b>（每題 3 分）：英文題幹，看一段 R 程式碼判斷結果，例如「哪一行會取出矩陣的第二欄」「哪一個會出現 Error」。</li>
+<li><b>簡答題</b>（每題 5 分）：英文問答，例如 EDA 的重要性、監督式與非監督式學習的比較、<code>%&gt;%</code> 的用途並舉例。</li>
+<li><b>填充題</b>（每題 5 分）：填函數名稱或專有名詞，例如讀 CSV 的函數、做 ANOVA 的函數、配適邏輯斯迴歸的函數、檢查缺失值的函數。</li>
+<li><b>寫程式</b>（10～11 分）：貼上 R 程式碼，例如 filter 與 mutate、回傳 list 的函數、有預設引數的函數。</li>
+</ul></section>
+
+<nav class="pager"><span></span><a class="next" href="ch01.html">第 1 章 →</a></nav></main>
+<script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
+<script src="assets/search.js?v=7a3ed758"></script>
+<script src="assets/site.js?v=24ecedd3"></script>
+</body></html>

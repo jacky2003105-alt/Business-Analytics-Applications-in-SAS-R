@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 7 章 廣義線性模型 GLM｜商業分析：R課程筆記</title>
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css?v=7cb3acbb">
+</head><body data-page="ch07">
+<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
+<label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html" selected>第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option></select></div></div>
+<main class="wrap"><header class="ch-head"><h1>第 7 章　廣義線性模型 GLM</h1><details class="ch-toc"><summary>本章目錄（6 節）</summary><ol><li><a href="#s7-1"><span>7.1</span>GLM 的三個組成</a></li><li><a href="#s7-2"><span>7.2</span>邏輯斯迴歸</a></li><li><a href="#s7-3"><span>7.3</span>訓練集、測試集與 ROC 曲線</a></li><li><a href="#s7-4"><span>7.4</span>Poisson 迴歸</a></li><li><a href="#s7-5"><span>7.5</span>補償項 offset：建模「率」</a></li><li><a href="#s7-6"><span>7.6</span>本章小結</a></li></ol></details></header>
+<div class="ch-intro"><p>第 6 章的線性迴歸假設反應變數 Y 是連續、近似常態的。但商業上很多重要的 Y 不是這樣：顧客<strong>會不會</strong>流失、信用卡<strong>有沒有</strong>核准（二元：是／否）、一個月<strong>刷了幾次</strong>卡（計數：0、1、2、…）。這時要用<strong>廣義線性模型</strong>（Generalized Linear Model, GLM）。R 用 <code>glm()</code> 配適，用法和 <code>lm()</code> 幾乎一樣，只多了一個 <code>family</code> 引數。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">broom</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">AER</span><span class="p">)</span><span class="w">            </span><span class="c1"># 提供 CreditCard、Fatalities 資料與 dispersiontest()</span>
+<span class="nf">data</span><span class="p">(</span><span class="s">"CreditCard"</span><span class="p">)</span>
+</code></pre></div></div><section class="sec" id="s7-1" data-label="7.1 GLM 的三個組成"><h2><span class="num">7.1</span>GLM 的三個組成</h2><p>任何 GLM 都由三部分構成：</p>
+<ol>
+<li><strong>隨機成分</strong>（random component）：Y 服從什麼分配——常態、二項、Poisson、Gamma……</li>
+<li><strong>系統成分</strong>（systematic component）：預測變數的線性組合 \(\eta=\beta_0+\beta_1x_1+\dots+\beta_px_p\)，叫<strong>線性預測式</strong>。</li>
+<li><strong>連結函數</strong>（link function）\(g\)：把 Y 的平均數 \(\mu=E(Y)\) 和線性預測式連起來，\(g(\mu)=\eta\)。</li>
+</ol>
+<p>為什麼需要連結函數？以二元資料為例，\(\mu\) 是「發生的機率」，必須介於 0 和 1；但 \(\eta\) 可以是任何實數。直接令 \(\mu=\eta\) 會預測出 1.3 或 -0.2 這種不可能的機率。連結函數把 0～1 的機率「拉開」成整條實數線，兩邊才能相等。</p>
+<table>
+<thead>
+<tr>
+<th>Y 的型態</th>
+<th>分配 family</th>
+<th>預設連結</th>
+<th>模型名稱</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>連續</td>
+<td><code>gaussian</code></td>
+<td>identity：\(\mu=\eta\)</td>
+<td>線性迴歸（同 <code>lm()</code>）</td>
+</tr>
+<tr>
+<td>二元 0/1</td>
+<td><code>binomial</code></td>
+<td>logit：\(\log\frac{\mu}{1-\mu}=\eta\)</td>
+<td>邏輯斯迴歸</td>
+</tr>
+<tr>
+<td>計數</td>
+<td><code>poisson</code></td>
+<td>log：\(\log\mu=\eta\)</td>
+<td>Poisson 迴歸</td>
+</tr>
+<tr>
+<td>正的連續（偏斜）</td>
+<td><code>Gamma</code></td>
+<td>inverse（常改用 log）</td>
+<td>Gamma 迴歸</td>
+</tr>
+</tbody>
+</table>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">m_lm</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">lm</span><span class="p">(</span><span class="n">mpg</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">wt</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mtcars</span><span class="p">)</span>
+<span class="n">m_glm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">mpg</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">wt</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mtcars</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gaussian</span><span class="p">)</span>
+<span class="nf">rbind</span><span class="p">(</span><span class="n">lm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">coef</span><span class="p">(</span><span class="n">m_lm</span><span class="p">),</span><span class="w"> </span><span class="n">glm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">coef</span><span class="p">(</span><span class="n">m_glm</span><span class="p">))</span><span class="w">   </span><span class="c1"># family = gaussian 就是線性迴歸</span>
+</code></pre></div>
+<pre class="out"><code>##     (Intercept)     wt
+## lm        37.29 -5.344
+## glm       37.29 -5.344</code></pre><section class="cc" id="cc-s7-1"><h3 class="cc-h">Concept Check：7.1 GLM 的三個組成</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s7-1-1" data-label="7.1 GLM 的三個組成 Q1"><div class="q-meta"><h4><a href="#q-s7-1-1">Q1</a></h4><span class="q-kind">選擇｜易</span><span class="q-title">選 family</span></div><div class="q-text"><p>The response variable is whether a customer churns (yes/no). Which <code>family</code> should be used in <code>glm()</code>?</p></div><ol class="opts"><li><b>(A)</b><span><code>gaussian</code></span></li><li><b>(B)</b><span><code>poisson</code></span></li><li><b>(C)</b><span><code>Gamma</code></span></li><li><b>(D)</b><span><code>binomial</code></span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>反應變數是顧客是否流失（是／否），glm() 要用哪個 family？</p></div><div class="ans"><strong>答案 (D)</strong><code>binomial</code></div><div class="why"><p class="sh">解析</p><p>二元反應用 binomial（預設 logit 連結），也就是邏輯斯迴歸。計數用 poisson；連續常態用 gaussian。</p></div></div></article><article class="q" id="q-s7-1-2" data-label="7.1 GLM 的三個組成 Q2"><div class="q-meta"><h4><a href="#q-s7-1-2">Q2</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">連結函數的作用</span></div><div class="q-text"><p>Why does logistic regression use the logit link instead of modeling the probability directly as \(\beta_0+\beta_1x\)?</p></div><ol class="opts"><li><b>(A)</b><span>A straight line can predict probabilities below 0 or above 1</span></li><li><b>(B)</b><span>The logit link makes the model identical to ordinary least squares</span></li><li><b>(C)</b><span>The logit link removes the need to estimate an intercept term</span></li><li><b>(D)</b><span>A straight line cannot be fitted when the predictor is categorical</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>邏輯斯迴歸為什麼要用 logit 連結，而不是直接令機率等於 \(\beta_0+\beta_1x\)？</p></div><div class="ans"><strong>答案 (A)</strong><p>A straight line can predict probabilities below 0 or above 1</p></div><div class="why"><p class="sh">解析</p><p>機率必須介於 0 和 1，直線則會無限延伸。logit 把 (0, 1) 的機率轉成 (−∞, ∞) 的 log-odds，再令它等於線性預測式，反推回來的機率一定落在 0 和 1 之間。</p></div></div></article><article class="q" id="q-s7-1-3" data-label="7.1 GLM 的三個組成 Q3"><div class="q-meta"><h4><a href="#q-s7-1-3">Q3</a></h4><span class="q-kind">填空｜易</span><span class="q-title">三個組成</span></div><div class="q-text"><p>A GLM consists of a random component, a systematic component, and a <strong><em>_</em></strong>_ function that relates the mean of the response to the linear predictor.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>GLM 由隨機成分、系統成分，以及連結平均數與線性預測式的哪一種函數組成？</p></div><div class="ans"><strong>答案</strong><p>link（連結函數）</p></div><div class="why"><p class="sh">解析</p><p>\(g(\mu)=\eta\)。binomial 預設 logit、poisson 預設 log、gaussian 預設 identity。</p></div></div></article></section></section><section class="sec" id="s7-2" data-label="7.2 邏輯斯迴歸"><h2><span class="num">7.2</span>邏輯斯迴歸</h2><h3 id="s7-2-1">機率、勝算、log-odds</h3>
+<p>先釐清三個名詞。若事件發生的機率是 \(p\)：</p>
+<ul>
+<li><strong>勝算</strong>（odds）\(=\dfrac{p}{1-p}\)：發生和不發生的比值。\(p=0.8\) 時勝算是 4（發生的可能是不發生的 4 倍）。</li>
+<li><strong>log-odds</strong>（logit）\(=\log\dfrac{p}{1-p}\)：勝算取自然對數，範圍是整條實數線。</li>
+<li><strong>勝算比</strong>（odds ratio, OR）：兩個勝算相除，用來比較兩種情況。</li>
+</ul>
+<p>邏輯斯迴歸的模型：</p>
+\[\log\frac{P(Y=1)}{1-P(Y=1)}=X\beta \quad\Longleftrightarrow\quad P(Y=1)=\frac{e^{X\beta}}{1+e^{X\beta}}\]
+<p>右邊這個 S 形函數把任何實數壓到 0 和 1 之間：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">ggplot</span><span class="p">(</span><span class="nf">data.frame</span><span class="p">(</span><span class="n">eta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-6</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">)),</span><span class="w"> </span><span class="nf">aes</span><span class="p">(</span><span class="n">eta</span><span class="p">))</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="nf">stat_function</span><span class="p">(</span><span class="n">fun</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">plogis</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="nf">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"linear predictor (log-odds)"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"P(Y = 1)"</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch07-unnamed-chunk-3-1.png" target="_blank"><img src="assets/fig/ch07-unnamed-chunk-3-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<p><code>plogis()</code> 就是 \(\frac{e^x}{1+e^x}\)（logistic 分配的累積函數，第 4 章 p 前綴的規則）；反過來 <code>qlogis(p)</code> 是 logit。</p>
+<h3 id="s7-2-2">配適：信用卡核卡資料</h3>
+<p><code>AER::CreditCard</code> 有 1,319 位申請人：<code>card</code> 是否核卡、<code>reports</code> 重大負面信用紀錄次數、<code>age</code> 年齡、<code>income</code> 年收入（萬美元）、<code>owner</code> 是否有自有住宅。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">CreditCard</span><span class="o">$</span><span class="n">card</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ifelse</span><span class="p">(</span><span class="n">CreditCard</span><span class="o">$</span><span class="n">card</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"yes"</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">   </span><span class="c1"># yes/no 轉成 1/0</span>
+<span class="nf">table</span><span class="p">(</span><span class="n">CreditCard</span><span class="o">$</span><span class="n">card</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## 
+##    0    1 
+##  296 1023</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">logit_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">card</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span>
+<span class="w">                   </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreditCard</span><span class="p">,</span>
+<span class="w">                   </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">binomial</span><span class="p">(</span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"logit"</span><span class="p">))</span>
+<span class="nf">summary</span><span class="p">(</span><span class="n">logit_model</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## 
+## Call:
+## glm(formula = card ~ reports + age + income + owner, family = binomial(link = &quot;logit&quot;), 
+##     data = CreditCard)
+## 
+## Coefficients:
+##             Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)   1.3274     0.2873    4.62  3.8e-06 ***
+## reports      -1.3342     0.1128  -11.83  &lt; 2e-16 ***
+## age          -0.0124     0.0085   -1.46  0.14479    
+## income        0.2094     0.0607    3.45  0.00056 ***
+## owneryes      0.7071     0.1825    3.87  0.00011 ***
+## ---
+## Signif. codes:  0 &#x27;***&#x27; 0.001 &#x27;**&#x27; 0.01 &#x27;*&#x27; 0.05 &#x27;.&#x27; 0.1 &#x27; &#x27; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1404.6  on 1318  degrees of freedom
+## Residual deviance: 1071.3  on 1314  degrees of freedom
+## AIC: 1081
+## 
+## Number of Fisher Scoring iterations: 6</code></pre>
+<ul>
+<li><code>family = binomial(link = &quot;logit&quot;)</code>：二項分配 + logit 連結；<code>link = &quot;logit&quot;</code> 是預設，寫 <code>family = binomial</code> 就好。</li>
+<li>反應變數可以是 0/1、TRUE/FALSE，或兩個水準的因子（第一個水準當 0）。</li>
+<li>係數表的檢定是 <strong>z 檢定</strong>（<code>z value</code>、<code>Pr(&gt;|z|)</code>），不是 t 檢定，但讀法相同。</li>
+<li><strong>Null deviance</strong> 是只有截距的模型的偏差，<strong>Residual deviance</strong> 是這個模型的偏差：差越多，表示預測變數解釋越多。AIC 用來比較模型。</li>
+</ul>
+<h3 id="s7-2-3">解讀係數：log-odds 與勝算比</h3>
+<p>係數是 <strong>log-odds</strong> 尺度：reports 的係數 -1.334 表示負面紀錄每多一次，核卡的 log-odds 減少 1.33。log-odds 不直觀，取指數變成<strong>勝算比</strong>：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">exp</span><span class="p">(</span><span class="nf">cbind</span><span class="p">(</span><span class="n">OR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">coef</span><span class="p">(</span><span class="n">logit_model</span><span class="p">),</span><span class="w"> </span><span class="nf">confint</span><span class="p">(</span><span class="n">logit_model</span><span class="p">)))</span>
+</code></pre></div>
+<pre class="out"><code>##                 OR  2.5 % 97.5 %
+## (Intercept) 3.7713 2.1463 6.6253
+## reports     0.2634 0.2093 0.3256
+## age         0.9877 0.9715 1.0045
+## income      1.2330 1.0985 1.3938
+## owneryes    2.0281 1.4239 2.9145</code></pre>
+<ul>
+<li>reports 的 OR = 0.263：負面紀錄每多一次，核卡的<strong>勝算</strong>變成原本的 0.26 倍，也就是減少約 74%。</li>
+<li>income 的 OR = 1.233：年收入每多 1 萬美元，勝算增加約 23%。</li>
+<li>owneryes 的 OR = 2.03：有自有住宅者的勝算是沒有者的約 2 倍。</li>
+<li>age 的信賴區間包含 1（p 值也不顯著），表示年齡沒有明顯影響。</li>
+</ul>
+<div class="box key"><span class="tag">重點</span><strong class="bt">OR 怎麼讀</strong><p>OR &gt; 1 表示 X 增加時事件更容易發生；OR &lt; 1 表示更不容易；OR = 1 表示沒影響。OR 是勝算的倍數，<strong>不是機率的倍數</strong>。</p></div>
+<h3 id="s7-2-4">算出某個人的核卡機率</h3>
+<p>一位 30 歲、年收入 10 萬、有房子、沒有負面紀錄的申請人：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">coef</span><span class="p">(</span><span class="n">logit_model</span><span class="p">)</span>
+<span class="n">eta</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"reports"</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"age"</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"income"</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"owneryes"</span><span class="p">]</span>
+<span class="n">odds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span>
+<span class="n">odds</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">odds</span><span class="p">)</span><span class="w">          </span><span class="c1"># 機率</span>
+</code></pre></div>
+<pre class="out"><code>## (Intercept) 
+##      0.9772</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">plogis</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span><span class="w">                </span><span class="c1"># 同上</span>
+</code></pre></div>
+<pre class="out"><code>## (Intercept) 
+##      0.9772</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">predict</span><span class="p">(</span><span class="n">logit_model</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">data.frame</span><span class="p">(</span><span class="n">reports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">30</span><span class="p">,</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"yes"</span><span class="p">),</span>
+<span class="w">        </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"response"</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##      1 
+## 0.9772</code></pre>
+<p><code>predict(..., type = &quot;response&quot;)</code> 直接回傳機率；<strong>不加</strong> <code>type = &quot;response&quot;</code>，回傳的是 log-odds（線性預測式 η）。</p>
+<h3 id="s7-2-5">預測與混淆矩陣</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">prob</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="n">logit_model</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"response"</span><span class="p">)</span><span class="w">   </span><span class="c1"># 每個人的核卡機率</span>
+<span class="nf">head</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>##     1     2     3     4     5     6 
+## 0.925 0.806 0.928 0.815 0.976 0.827</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pred</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ifelse</span><span class="p">(</span><span class="n">prob</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">                   </span><span class="c1"># 機率 &gt; 0.5 判為核卡</span>
+<span class="nf">table</span><span class="p">(</span><span class="n">Predicted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pred</span><span class="p">,</span><span class="w"> </span><span class="n">Actual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreditCard</span><span class="o">$</span><span class="n">card</span><span class="p">)</span><span class="w">  </span><span class="c1"># 混淆矩陣</span>
+</code></pre></div>
+<pre class="out"><code>##          Actual
+## Predicted    0    1
+##         0  105   17
+##         1  191 1006</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">mean</span><span class="p">(</span><span class="n">pred</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CreditCard</span><span class="o">$</span><span class="n">card</span><span class="p">)</span><span class="w">                      </span><span class="c1"># 正確率</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.8423</code></pre>
+<p><strong>混淆矩陣</strong>（confusion matrix）把預測和實際交叉列表，對角線是預測正確的人數。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>實際 = 1</th>
+<th>實際 = 0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>預測 = 1</td>
+<td>真陽性 TP</td>
+<td>偽陽性 FP</td>
+</tr>
+<tr>
+<td>預測 = 0</td>
+<td>偽陰性 FN</td>
+<td>真陰性 TN</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>正確率（accuracy）= (TP + TN) / 全部。</li>
+<li>敏感度（sensitivity，真陽率）= TP / (TP + FN)：實際是 1 的人，有多少被抓到。</li>
+<li>特異度（specificity，真陰率）= TN / (TN + FP)：實際是 0 的人，有多少被正確排除。</li>
+<li>門檻 0.5 不是固定的：調高門檻，判為 1 的人變少，敏感度下降、特異度上升。</li>
+</ul>
+<div class="box key exam"><span class="tag">考古題出過</span><strong class="bt">填充題：配適邏輯斯迴歸的函數</strong><p>考古題：「The ____ function in R is used for fitting logistic regression models, which are commonly employed for binary classification problems.」答案是 <code>glm()</code>（搭配 <code>family = binomial</code>）。</p></div><section class="cc" id="cc-s7-2"><h3 class="cc-h">Concept Check：7.2 邏輯斯迴歸</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s7-2-1" data-label="7.2 邏輯斯迴歸 Q1"><div class="q-meta"><h4><a href="#q-s7-2-1">Q1</a></h4><span class="q-kind">填空｜易</span><span class="q-title">邏輯斯迴歸</span></div><div class="q-text"><p>The <strong><em>_</em></strong>_ function in R is used for fitting logistic regression models, which are commonly employed for binary classification problems.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>R 中配適邏輯斯迴歸（常用於二元分類）的函數是什麼？</p></div><div class="ans"><strong>答案</strong><p><code>glm()</code>（<code>family = binomial</code>）</p></div><div class="why"><p class="sh">解析</p><p>考古題原題。寫 <code>lm()</code> 是錯的；<code>glm(y ~ x, family = binomial, data = df)</code>。</p></div></div></article><article class="q" id="q-s7-2-2" data-label="7.2 邏輯斯迴歸 Q2"><div class="q-meta"><h4><a href="#q-s7-2-2">Q2</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">type = &quot;response&quot;</span></div><div class="q-text"><p>For a fitted logistic model <code>m</code>, what does <code>predict(m, newdata, type = &quot;response&quot;)</code> return?</p></div><ol class="opts"><li><b>(A)</b><span>The predicted log-odds for each observation</span></li><li><b>(B)</b><span>The predicted class labels 0 or 1 for each observation</span></li><li><b>(C)</b><span>The predicted probability that Y = 1</span></li><li><b>(D)</b><span>The odds ratio of each predictor in the model</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p><code>predict(m, newdata, type = &quot;response&quot;)</code> 回傳什麼？</p></div><div class="ans"><strong>答案 (C)</strong><p>The predicted probability that Y = 1</p></div><div class="why"><p class="sh">解析</p><p><code>type = &quot;response&quot;</code> 回傳反應變數尺度的值，對邏輯斯迴歸就是機率。不加時（預設 <code>type = &quot;link&quot;</code>）回傳 log-odds。predict 不會自動分類，要自己用門檻 <code>ifelse(p &gt; 0.5, 1, 0)</code>。</p></div></div></article><article class="q" id="q-s7-2-3" data-label="7.2 邏輯斯迴歸 Q3"><div class="q-meta"><h4><a href="#q-s7-2-3">Q3</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">解讀勝算比</span></div><div class="q-text"><p>In a logistic regression, the coefficient of <code>income</code> is 0.18, so \(e^{0.18}\approx 1.20\). Which interpretation is correct?</p></div><ol class="opts"><li><b>(A)</b><span>Each extra unit of income raises the probability by 20 points</span></li><li><b>(B)</b><span>Each extra unit of income raises the probability by 18%</span></li><li><b>(C)</b><span>Each extra unit of income multiplies the probability by 1.20</span></li><li><b>(D)</b><span>Each extra unit of income multiplies the odds by about 1.20</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>income 係數 0.18、\(e^{0.18}\approx1.20\)，正確的解讀是哪一個？</p></div><div class="ans"><strong>答案 (D)</strong><p>Each extra unit of income multiplies the odds by about 1.20</p></div><div class="why"><p class="sh">解析</p><p>指數化的係數是勝算比：勝算變成 1.2 倍，即增加 20%。它描述的是勝算（odds），不是機率；機率的變化量會隨原本的機率高低而不同。</p></div></div></article><article class="q" id="q-s7-2-4" data-label="7.2 邏輯斯迴歸 Q4"><div class="q-meta"><h4><a href="#q-s7-2-4">Q4</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">混淆矩陣</span></div><div class="q-text"><p>A confusion matrix shows TP = 40, FN = 10, FP = 20, TN = 130. What is the sensitivity?</p></div><ol class="opts"><li><b>(A)</b><span>0.80</span></li><li><b>(B)</b><span>0.67</span></li><li><b>(C)</b><span>0.87</span></li><li><b>(D)</b><span>0.85</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>TP = 40、FN = 10、FP = 20、TN = 130，敏感度是多少？</p></div><div class="ans"><strong>答案 (A)</strong><p>0.80</p></div><div class="why"><p class="sh">解析</p><p>敏感度 = TP / (TP + FN) = 40 / 50 = 0.80。(B) 是 TP / (TP + FP) = 精確率；(C) 是特異度 130 / 150；(D) 是正確率 170 / 200。</p></div></div></article><article class="q" id="q-s7-2-5" data-label="7.2 邏輯斯迴歸 Q5"><div class="q-meta"><h4><a href="#q-s7-2-5">Q5</a></h4><span class="q-kind">寫程式｜中</span><span class="q-title">手算機率</span></div><div class="q-text"><p>Using <code>logit_model</code>, compute the approval probability for an applicant with 2 derogatory reports, age 40, income 5 and no home ownership, in two ways: with <code>plogis()</code> on the linear predictor, and with <code>predict(type = &quot;response&quot;)</code>.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>計算 reports = 2、age = 40、income = 5、沒有自有住宅的人的核卡機率：用 plogis() 手算，再用 predict() 驗證。</p></div><div class="ans"><strong>答案</strong><div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">coef</span><span class="p">(</span><span class="n">logit_model</span><span class="p">)</span>
+<span class="n">eta</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"reports"</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">40</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"age"</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"income"</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="s">"owneryes"</span><span class="p">]</span>
+<span class="nf">plogis</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## (Intercept) 
+##      0.3122</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">predict</span><span class="p">(</span><span class="n">logit_model</span><span class="p">,</span>
+<span class="w">        </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">data.frame</span><span class="p">(</span><span class="n">reports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">40</span><span class="p">,</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"no"</span><span class="p">),</span>
+<span class="w">        </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"response"</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##      1 
+## 0.3122</code></pre></div><div class="why"><p class="sh">解析</p><p>owner 是因子，owneryes 這個虛擬變數在「沒有」時為 0。newdata 的 owner 要給 "no"（和原始資料的水準名稱一致）。</p></div></div></article></section></section><section class="sec" id="s7-3" data-label="7.3 訓練集、測試集與 ROC 曲線"><h2><span class="num">7.3</span>訓練集、測試集與 ROC 曲線</h2><p>上一節用<strong>同一份資料</strong>配適又評估，正確率會過度樂觀。正確做法是把資料分成<strong>訓練集</strong>（配適模型）和<strong>測試集</strong>（評估模型），第 8 章會詳細說明。這裡用老師課堂檔的 tidyverse 寫法，依 card 分層抽 70% 當訓練集：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">set.seed</span><span class="p">(</span><span class="m">100</span><span class="p">)</span>
+<span class="n">CreditCard</span><span class="o">$</span><span class="n">index</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">nrow</span><span class="p">(</span><span class="n">CreditCard</span><span class="p">)</span>
+<span class="n">train_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">CreditCard</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">group_by</span><span class="p">(</span><span class="n">card</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">sample_frac</span><span class="p">(</span><span class="m">0.7</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">ungroup</span><span class="p">()</span>
+<span class="n">test_df</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">anti_join</span><span class="p">(</span><span class="n">CreditCard</span><span class="p">,</span><span class="w"> </span><span class="n">train_df</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"index"</span><span class="p">)</span>
+<span class="nf">c</span><span class="p">(</span><span class="n">train</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">nrow</span><span class="p">(</span><span class="n">train_df</span><span class="p">),</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">nrow</span><span class="p">(</span><span class="n">test_df</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>## train  test 
+##   923   396</code></pre>
+<ul>
+<li><code>group_by(card) %&gt;% sample_frac(0.7)</code>：在 card = 0 和 card = 1 兩組中<strong>各自</strong>抽 70%，讓訓練集和測試集的核卡比例一致（分層抽樣）。</li>
+<li><code>anti_join(x, y, by)</code>：留下 x 中<strong>對不上</strong> y 的列，也就是沒被抽到訓練集的那 30%。</li>
+</ul>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">card</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">train_df</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binomial</span><span class="p">)</span>
+<span class="n">predicted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">test_df</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"response"</span><span class="p">)</span>
+<span class="n">pred_class</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ifelse</span><span class="p">(</span><span class="n">predicted</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">)</span>
+<span class="nf">table</span><span class="p">(</span><span class="n">Predicted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pred_class</span><span class="p">,</span><span class="w"> </span><span class="n">Actual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test_df</span><span class="o">$</span><span class="n">card</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##          Actual
+## Predicted   0   1
+##         0  35   9
+##         1  54 298</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">mean</span><span class="p">(</span><span class="n">pred_class</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">test_df</span><span class="o">$</span><span class="n">card</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.8409</code></pre>
+<h3 id="s7-3-1">ROC 曲線與 AUC</h3>
+<p>正確率會隨門檻改變。<strong>ROC 曲線</strong>把所有可能的門檻都試一遍，畫出每個門檻下的「敏感度（真陽率）」對「1 − 特異度（偽陽率）」：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">pROC</span><span class="p">)</span>
+<span class="n">roc_obj</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">roc</span><span class="p">(</span><span class="n">test_df</span><span class="o">$</span><span class="n">card</span><span class="p">,</span><span class="w"> </span><span class="n">predicted</span><span class="p">,</span><span class="w"> </span><span class="n">quiet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="nf">plot</span><span class="p">(</span><span class="n">roc_obj</span><span class="p">,</span><span class="w"> </span><span class="n">print.auc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch07-unnamed-chunk-11-1.png" target="_blank"><img src="assets/fig/ch07-unnamed-chunk-11-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">auc</span><span class="p">(</span><span class="n">roc_obj</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## Area under the curve: 0.768</code></pre>
+<ul>
+<li>左上角是完美分類（真陽率 1、偽陽率 0）；對角線是亂猜。曲線越往左上凸越好。</li>
+<li><strong>AUC</strong>（Area Under the Curve）是曲線下面積：1 完美、0.5 等於亂猜。它和門檻無關，常用來比較不同模型。</li>
+<li>注意 pROC 預設的橫軸是 Specificity（由 1 到 0），和「1 − 特異度」是同一件事，只是刻度方向相反。</li>
+</ul><section class="cc" id="cc-s7-3"><h3 class="cc-h">Concept Check：7.3 訓練集、測試集與 ROC 曲線</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s7-3-1" data-label="7.3 訓練集、測試集與 ROC 曲線 Q1"><div class="q-meta"><h4><a href="#q-s7-3-1">Q1</a></h4><span class="q-kind">選擇｜易</span><span class="q-title">AUC</span></div><div class="q-text"><p>A classifier has AUC = 0.5. What does this mean?</p></div><ol class="opts"><li><b>(A)</b><span>It classifies exactly half of the cases correctly</span></li><li><b>(B)</b><span>It is perfect at a threshold of 0.5</span></li><li><b>(C)</b><span>It always predicts the majority class</span></li><li><b>(D)</b><span>It performs no better than random guessing</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>AUC = 0.5 代表什麼？</p></div><div class="ans"><strong>答案 (D)</strong><p>It performs no better than random guessing</p></div><div class="why"><p class="sh">解析</p><p>AUC 0.5 的 ROC 曲線落在對角線上，等於隨機猜測；AUC 1 才是完美分類。AUC 和門檻無關，也不是「正確率 50%」。</p></div></div></article><article class="q" id="q-s7-3-2" data-label="7.3 訓練集、測試集與 ROC 曲線 Q2"><div class="q-meta"><h4><a href="#q-s7-3-2">Q2</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">anti_join</span></div><div class="q-text"><p>After <code>train_df &lt;- df %&gt;% sample_frac(0.7)</code>, which code creates the test set containing the remaining 30% of rows (<code>index</code> is a unique ID)?</p></div><ol class="opts"><li><b>(A)</b><span><code>anti_join(df, train_df, by = &quot;index&quot;)</code></span></li><li><b>(B)</b><span><code>inner_join(df, train_df, by = &quot;index&quot;)</code></span></li><li><b>(C)</b><span><code>left_join(train_df, df, by = &quot;index&quot;)</code></span></li><li><b>(D)</b><span><code>full_join(df, train_df, by = &quot;index&quot;)</code></span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>哪一行能建立測試集（剩下的 30%）？</p></div><div class="ans"><strong>答案 (A)</strong><code>anti_join(df, train_df, by = &quot;index&quot;)</code></div><div class="why"><p class="sh">解析</p><p><code>anti_join(x, y)</code> 留下 x 中對不上 y 的列，也就是沒被抽進訓練集的那些。inner_join 剛好相反，只留下訓練集那 70%。</p></div></div></article><article class="q" id="q-s7-3-3" data-label="7.3 訓練集、測試集與 ROC 曲線 Q3"><div class="q-meta"><h4><a href="#q-s7-3-3">Q3</a></h4><span class="q-kind">簡答｜中</span><span class="q-title">為什麼要測試集</span></div><div class="q-text"><p>Why should a classification model be evaluated on a test set rather than on the data used to fit it?</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>為什麼分類模型要用測試集評估，而不是用配適時的資料？</p></div><div class="ans"><strong>答案</strong><p>模型是依照訓練資料估計的，會把訓練資料中的雜訊也配適進去，所以在同一批資料上算出的正確率會過度樂觀，無法代表模型面對新顧客時的表現。把一部分資料留下來不參與配適，再用它評估，才能誠實估計模型對「沒看過的資料」的預測能力。</p></div><div class="why"><p class="sh">解析</p><p>第 8 章的交叉驗證是把這個想法做得更穩定的版本。</p></div></div></article><article class="q" id="q-s7-3-4" data-label="7.3 訓練集、測試集與 ROC 曲線 Q4"><div class="q-meta"><h4><a href="#q-s7-3-4">Q4</a></h4><span class="q-kind">寫程式｜難</span><span class="q-title">課後練習：Smarket</span></div><div class="q-text"><p>Using <code>ISLR::Smarket</code>, fit a logistic regression of <code>Direction</code> on <code>Lag1</code>–<code>Lag5</code> and <code>Volume</code> using years 2001–2004 as the training set. Predict 2005 with threshold 0.5, report the confusion matrix and test accuracy, and compute the AUC.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>用 Smarket 以 2001–2004 年為訓練集配適邏輯斯迴歸，預測 2005 年（門檻 0.5），報告混淆矩陣、正確率與 AUC。</p></div><div class="ans"><strong>答案</strong><div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">ISLR</span><span class="p">)</span>
+<span class="n">train7</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">subset</span><span class="p">(</span><span class="n">Smarket</span><span class="p">,</span><span class="w"> </span><span class="n">Year</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">2004</span><span class="p">)</span>
+<span class="n">test7</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">subset</span><span class="p">(</span><span class="n">Smarket</span><span class="p">,</span><span class="w"> </span><span class="n">Year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2005</span><span class="p">)</span>
+<span class="n">m7</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">Direction</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">Lag1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Lag2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Lag3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Lag4</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Lag5</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Volume</span><span class="p">,</span>
+<span class="w">          </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binomial</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">train7</span><span class="p">)</span>
+<span class="n">p7</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="n">m7</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test7</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"response"</span><span class="p">)</span><span class="w">   </span><span class="c1"># P(Direction = "Up")</span>
+<span class="n">pred7</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ifelse</span><span class="p">(</span><span class="n">p7</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="s">"Up"</span><span class="p">,</span><span class="w"> </span><span class="s">"Down"</span><span class="p">)</span>
+<span class="nf">table</span><span class="p">(</span><span class="n">Predicted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pred7</span><span class="p">,</span><span class="w"> </span><span class="n">Actual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test7</span><span class="o">$</span><span class="n">Direction</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##          Actual
+## Predicted Down Up
+##      Down   77 97
+##      Up     34 44</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">mean</span><span class="p">(</span><span class="n">pred7</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">test7</span><span class="o">$</span><span class="n">Direction</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.4802</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">roc7</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">roc</span><span class="p">(</span><span class="n">test7</span><span class="o">$</span><span class="n">Direction</span><span class="p">,</span><span class="w"> </span><span class="n">p7</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"Down"</span><span class="p">,</span><span class="w"> </span><span class="s">"Up"</span><span class="p">),</span><span class="w"> </span><span class="n">direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"&lt;"</span><span class="p">,</span><span class="w"> </span><span class="n">quiet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="nf">auc</span><span class="p">(</span><span class="n">roc7</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## Area under the curve: 0.52</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">plot</span><span class="p">(</span><span class="n">roc7</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch07-unnamed-chunk-12-1.png" target="_blank"><img src="assets/fig/ch07-unnamed-chunk-12-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure></div><div class="why"><p class="sh">解析</p><p>老師講義的課後練習。Direction 是因子，第一個水準 Down 當 0、Up 當 1，所以預測機率是「上漲」的機率。測試正確率只有約 48%、AUC 約 0.52，和亂猜差不多——用過去幾天的報酬預測今天股市漲跌本來就非常困難。這是一個「模型在訓練集看起來還行、在測試集卻不行」的好例子。</p></div></div></article></section></section><section class="sec" id="s7-4" data-label="7.4 Poisson 迴歸"><h2><span class="num">7.4</span>Poisson 迴歸</h2><h3 id="s7-4-1">模型</h3>
+<p>反應變數是<strong>計數</strong>時（例如過去一年信用卡的活躍帳戶數 <code>active</code>），用 Poisson 迴歸：</p>
+\[Y_i\sim\text{Poisson}(\mu_i),\qquad \log(\mu_i)=X\beta\quad\Longleftrightarrow\quad \mu_i=e^{X\beta}\]
+<p>log 連結確保預測的平均次數一定是正的。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pmodel</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">active</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span>
+<span class="w">              </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreditCard</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poisson</span><span class="p">)</span>
+<span class="nf">tidy</span><span class="p">(</span><span class="n">pmodel</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 5 × 5
+##   term        estimate std.error statistic   p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)  1.36      0.0377      36.0  1.42e-284
+## 2 reports      0.105     0.00549     19.1  2.70e- 81
+## 3 age          0.00518   0.00110      4.72 2.36e-  6
+## 4 income       0.0381    0.00594      6.42 1.36e- 10
+## 5 owneryes     0.432     0.0232      18.6  2.42e- 77</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">exp</span><span class="p">(</span><span class="nf">coef</span><span class="p">(</span><span class="n">pmodel</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>## (Intercept)     reports         age      income    owneryes 
+##       3.893       1.111       1.005       1.039       1.541</code></pre>
+<h3 id="s7-4-2">解讀係數</h3>
+<p>係數取指數後是<strong>比率</strong>（rate ratio）：X 每增加 1 單位，Y 的平均次數變成原本的 \(e^{\beta}\) 倍。</p>
+<ul>
+<li>reports：\(e^{0.105}\approx\) 1.111，負面紀錄每多一次，平均活躍帳戶數增加約 11.1%。</li>
+<li>owneryes：\(e^{0.432}\approx\) 1.54，有自有住宅者的平均活躍帳戶數約是沒有者的 1.54 倍。</li>
+</ul>
+<h3 id="s7-4-3">過度離散</h3>
+<p>Poisson 假設<strong>平均數 = 變異數</strong>。先直接看資料：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">c</span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">mean</span><span class="p">(</span><span class="n">CreditCard</span><span class="o">$</span><span class="n">active</span><span class="p">),</span><span class="w"> </span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p">(</span><span class="n">CreditCard</span><span class="o">$</span><span class="n">active</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>##   mean    var 
+##  6.997 39.763</code></pre>
+<p>變異數是平均數的五倍多，這叫<strong>過度離散</strong>（overdispersion）。這時 Poisson 模型的標準誤會被嚴重低估，p 值過度顯著，結果不可信。檢查方法：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">deviance</span><span class="p">(</span><span class="n">pmodel</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">df.residual</span><span class="p">(</span><span class="n">pmodel</span><span class="p">)</span><span class="w">   </span><span class="c1"># 殘差偏差 / 自由度，應該接近 1</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 5.218</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">dispersiontest</span><span class="p">(</span><span class="n">pmodel</span><span class="p">)</span><span class="w">                   </span><span class="c1"># AER 的正式檢定</span>
+</code></pre></div>
+<pre class="out"><code>## 
+## 	Overdispersion test
+## 
+## data:  pmodel
+## z = 15, p-value &lt;2e-16
+## alternative hypothesis: true dispersion is greater than 1
+## sample estimates:
+## dispersion 
+##       5.03</code></pre>
+<p>比值 5.22 遠大於 1，<code>dispersiontest()</code> 的 p 值也非常小，確認有過度離散。</p>
+<h3 id="s7-4-4">配適度檢定</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">pchisq</span><span class="p">(</span><span class="nf">deviance</span><span class="p">(</span><span class="n">pmodel</span><span class="p">),</span><span class="w"> </span><span class="nf">df.residual</span><span class="p">(</span><span class="n">pmodel</span><span class="p">),</span><span class="w"> </span><span class="n">lower.tail</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0</code></pre>
+<p>\(H_0\)：模型配適良好（殘差偏差服從自由度為 df 的卡方分配）。p 值幾乎是 0，拒絕 \(H_0\)，配適不佳。（<code>pchisq()</code> 就是第 4 章 p 前綴的卡方分配函數。）</p>
+<h3 id="s7-4-5">處理：quasi-Poisson 或負二項</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">qmodel</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">active</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span>
+<span class="w">              </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreditCard</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasipoisson</span><span class="p">)</span>
+<span class="n">nbmodel</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">MASS</span><span class="o">::</span><span class="nf">glm.nb</span><span class="p">(</span><span class="n">active</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">reports</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CreditCard</span><span class="p">)</span>
+<span class="nf">tibble</span><span class="p">(</span><span class="n">term</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="nf">coef</span><span class="p">(</span><span class="n">pmodel</span><span class="p">)),</span>
+<span class="w">       </span><span class="n">se_poisson</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="n">pmodel</span><span class="p">)</span><span class="o">$</span><span class="n">coef</span><span class="p">[,</span><span class="w"> </span><span class="m">2</span><span class="p">],</span>
+<span class="w">       </span><span class="n">se_quasi</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="n">qmodel</span><span class="p">)</span><span class="o">$</span><span class="n">coef</span><span class="p">[,</span><span class="w"> </span><span class="m">2</span><span class="p">],</span>
+<span class="w">       </span><span class="n">se_negbin</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="n">nbmodel</span><span class="p">)</span><span class="o">$</span><span class="n">coef</span><span class="p">[,</span><span class="w"> </span><span class="m">2</span><span class="p">])</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">mutate</span><span class="p">(</span><span class="nf">across</span><span class="p">(</span><span class="o">-</span><span class="n">term</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">.x</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">)))</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 5 × 4
+##   term        se_poisson se_quasi se_negbin
+##   &lt;chr&gt;            &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)     0.0377   0.0847    0.097 
+## 2 reports         0.0055   0.0123    0.0192
+## 3 age             0.0011   0.0025    0.0029
+## 4 income          0.0059   0.0133    0.0169
+## 5 owneryes        0.0232   0.0521    0.0597</code></pre>
+<ul>
+<li><strong>quasi-Poisson</strong>：係數估計和 Poisson 一樣，但另外估計一個離散參數，把標準誤放大。</li>
+<li><strong>負二項迴歸</strong>（<code>MASS::glm.nb()</code>）：直接假設一個允許變異數大於平均數的分配。</li>
+<li>兩者的標準誤都比 Poisson 大很多——原本看起來非常顯著的結果，修正後可能就不顯著了（例如 age）。</li>
+</ul><section class="cc" id="cc-s7-4"><h3 class="cc-h">Concept Check：7.4 Poisson 迴歸</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s7-4-1" data-label="7.4 Poisson 迴歸 Q1"><div class="q-meta"><h4><a href="#q-s7-4-1">Q1</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">過度離散</span></div><div class="q-text"><p>For a Poisson regression, <code>deviance(m) / df.residual(m)</code> equals 5.2. What does this suggest?</p></div><ol class="opts"><li><b>(A)</b><span>The model fits very well, so no change is needed at all</span></li><li><b>(B)</b><span>Overdispersion; consider quasi-Poisson or negative binomial</span></li><li><b>(C)</b><span>The response should be modeled with family = binomial</span></li><li><b>(D)</b><span>There is underdispersion, so the standard errors are too large</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>Poisson 迴歸中，殘差偏差除以自由度等於 5.2，代表什麼？</p></div><div class="ans"><strong>答案 (B)</strong><p>Overdispersion; consider quasi-Poisson or negative binomial</p></div><div class="why"><p class="sh">解析</p><p>比值應接近 1；遠大於 1 表示資料的變異比 Poisson 假設的大（過度離散），標準誤被低估。可改用 <code>family = quasipoisson</code> 或 <code>MASS::glm.nb()</code>。</p></div></div></article><article class="q" id="q-s7-4-2" data-label="7.4 Poisson 迴歸 Q2"><div class="q-meta"><h4><a href="#q-s7-4-2">Q2</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">Poisson 係數解讀</span></div><div class="q-text"><p>In a Poisson regression of monthly complaints, the coefficient of <code>delay_days</code> is 0.10 (\(e^{0.10}\approx1.105\)). What does it mean?</p></div><ol class="opts"><li><b>(A)</b><span>One extra delay day adds 0.10 complaints to the expected count</span></li><li><b>(B)</b><span>One extra delay day adds 1.105 complaints on average</span></li><li><b>(C)</b><span>One extra delay day raises expected complaints by 10.5%</span></li><li><b>(D)</b><span>One extra delay day raises the chance of a complaint by 10%</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>delay_days 係數 0.10，代表什麼？</p></div><div class="ans"><strong>答案 (C)</strong><p>One extra delay day raises expected complaints by 10.5%</p></div><div class="why"><p class="sh">解析</p><p>Poisson 迴歸用 log 連結，係數取指數後是平均次數的倍數：多延遲一天，平均客訴數變成 1.105 倍，即增加約 10.5%。它是乘法效果，不是加 0.10 件。</p></div></div></article><article class="q" id="q-s7-4-3" data-label="7.4 Poisson 迴歸 Q3"><div class="q-meta"><h4><a href="#q-s7-4-3">Q3</a></h4><span class="q-kind">填空｜中</span><span class="q-title">Poisson 的 family</span></div><div class="q-text"><p>To fit a Poisson regression for count data, use <code>glm(y ~ x, data = df, family = ________)</code>.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>配適計數資料的 Poisson 迴歸，family 要填什麼？</p></div><div class="ans"><strong>答案</strong><code>poisson</code></div><div class="why"><p class="sh">解析</p><p>預設連結是 log。有過度離散時改用 <code>quasipoisson</code>。</p></div></div></article></section></section><section class="sec" id="s7-5" data-label="7.5 補償項 offset：建模「率」"><h2><span class="num">7.5</span>補償項 offset：建模「率」</h2><p>很多計數是在<strong>不同的曝險量</strong>下發生的：大城市的病例本來就比小城市多、開車里程多的州車禍本來就多。真正想比較的是<strong>率</strong>（每人病例數、每英里車禍數），而不是次數。</p>
+\[\log\mu_i=\log(\text{exposure}_i)+X\beta\quad\Longleftrightarrow\quad\log\frac{\mu_i}{\text{exposure}_i}=X\beta\]
+<p>把 \(\log(\text{曝險量})\) 當成一個<strong>係數固定為 1</strong> 的項放進模型，叫<strong>補償項</strong>（offset）。移到左邊，模型描述的就是「率」。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">data</span><span class="p">(</span><span class="n">Fatalities</span><span class="p">)</span>
+<span class="n">fat_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">fatal</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">year</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">offset</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="n">milestot</span><span class="p">)),</span>
+<span class="w">                 </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poisson</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Fatalities</span><span class="p">)</span>
+<span class="nf">tidy</span><span class="p">(</span><span class="n">fat_model</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">head</span><span class="p">(</span><span class="m">4</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 4 × 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 (Intercept)  -3.59     0.00479    -750.  0       
+## 2 year1983     -0.0688   0.00683     -10.1 6.41e-24
+## 3 year1984     -0.0870   0.00676     -12.9 6.25e-38
+## 4 year1985     -0.112    0.00677     -16.5 1.68e-61</code></pre>
+<ul>
+<li><code>fatal</code>：各州各年的交通事故死亡數；<code>milestot</code>：該州該年的總行駛里程（百萬英里）。</li>
+<li><code>offset(log(milestot))</code>：係數不估計、固定為 1。</li>
+<li>year 是因子（1982～1988），每個係數是該年相對 1982 年「每單位里程死亡率」的對數比。</li>
+</ul>
+<p>為什麼係數要固定為 1？因為在其他條件相同時，里程加倍，期望的事故數就應該加倍——\(\log(2\times\text{miles})=\log 2+\log(\text{miles})\)，係數是 1 才會剛好讓期望值乘以 2。如果把 log(milestot) 當普通變數讓模型去估，估出的係數就不是「率」的模型了。</p><section class="cc" id="cc-s7-5"><h3 class="cc-h">Concept Check：7.5 補償項 offset：建模「率」</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s7-5-1" data-label="7.5 補償項 offset：建模「率」 Q1"><div class="q-meta"><h4><a href="#q-s7-5-1">Q1</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">offset 的係數</span></div><div class="q-text"><p>Why is the coefficient of an offset term such as <code>offset(log(population))</code> fixed at 1?</p></div><ol class="opts"><li><b>(A)</b><span>So that doubling the exposure doubles the expected count</span></li><li><b>(B)</b><span>So that the model can be fitted without an intercept term</span></li><li><b>(C)</b><span>So that the variance of the response equals its mean exactly</span></li><li><b>(D)</b><span>So that population can be dropped later in stepwise selection</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>為什麼 offset 的係數固定為 1？</p></div><div class="ans"><strong>答案 (A)</strong><p>So that doubling the exposure doubles the expected count</p></div><div class="why"><p class="sh">解析</p><p>\(\log\mu=\log(\text{pop})+X\beta\) 等價於 \(\mu=\text{pop}\times e^{X\beta}\)：期望次數和曝險量成正比，模型的 \(X\beta\) 描述的是每單位曝險的「率」。</p></div></div></article><article class="q" id="q-s7-5-2" data-label="7.5 補償項 offset：建模「率」 Q2"><div class="q-meta"><h4><a href="#q-s7-5-2">Q2</a></h4><span class="q-kind">簡答｜中</span><span class="q-title">何時用 offset</span></div><div class="q-text"><p>Describe a situation that requires an offset in a Poisson regression and explain why.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>舉一個需要在 Poisson 迴歸加入 offset 的情境，並說明原因。</p></div><div class="ans"><strong>答案</strong><p>例如比較各分店一個月的客訴件數，但各分店的來客數差很多。來客數多的分店，客訴自然多，直接比較件數不公平。真正要比較的是「每位顧客的客訴率」。加入 <code>offset(log(來客數))</code> 後，模型描述 \(\log(\text{客訴數}/\text{來客數})=X\beta\)，係數解讀為對「客訴率」的影響。offset 的係數固定為 1，表示來客數加倍、其他條件相同時，期望客訴數也加倍。</p></div><div class="why"><p class="sh">解析</p><p>其他例子：不同人口的地區的病例數、不同里程的車禍數、不同觀察時間長度的事件數。</p></div></div></article><article class="q" id="q-s7-5-3" data-label="7.5 補償項 offset：建模「率」 Q3"><div class="q-meta"><h4><a href="#q-s7-5-3">Q3</a></h4><span class="q-kind">寫程式｜難</span><span class="q-title">課後練習：eba1977</span></div><div class="q-text"><p>Using <code>ISwR::eba1977</code> (lung cancer cases by city and age group, with population <code>pop</code>), fit a Poisson regression of <code>cases</code> on <code>city</code> and <code>age</code> with offset <code>log(pop)</code>. Report the rate ratios and check for overdispersion.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>用 eba1977 以 city、age 預測 cases，加入 offset(log(pop))，報告率比並檢查過度離散。</p></div><div class="ans"><strong>答案</strong><div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">ISwR</span><span class="p">)</span>
+<span class="nf">data</span><span class="p">(</span><span class="n">eba1977</span><span class="p">)</span>
+<span class="n">m_eba</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">glm</span><span class="p">(</span><span class="n">cases</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">city</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">offset</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="n">pop</span><span class="p">)),</span>
+<span class="w">             </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poisson</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eba1977</span><span class="p">)</span>
+<span class="nf">round</span><span class="p">(</span><span class="nf">exp</span><span class="p">(</span><span class="nf">coef</span><span class="p">(</span><span class="n">m_eba</span><span class="p">)),</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## (Intercept) cityHorsens cityKolding   cityVejle    age55-59    age60-64 
+##       0.004       0.719       0.690       0.762       3.007       4.566 
+##    age65-69    age70-74      age75+ 
+##       5.857       6.404       4.136</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">deviance</span><span class="p">(</span><span class="n">m_eba</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">df.residual</span><span class="p">(</span><span class="n">m_eba</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 1.563</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">sum</span><span class="p">(</span><span class="nf">residuals</span><span class="p">(</span><span class="n">m_eba</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"pearson"</span><span class="p">)</span><span class="o">^</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">df.residual</span><span class="p">(</span><span class="n">m_eba</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 1.504</code></pre></div><div class="why"><p class="sh">解析</p><p>老師講義的課後練習。exp(係數) 是發生率比（IRR）：例如 age70-74 約 6.4，表示 70–74 歲的肺癌發生率是 40–54 歲組（參照組）的 6.4 倍左右；三個其他城市的 IRR 都小於 1，表示發生率低於參照城市 Fredericia。偏差比與 Pearson 比都約 1.5～1.6，略大於 1，有輕微過度離散；這份資料只有 24 筆，判讀要保守，可以再用 <code>quasipoisson</code> 比較標準誤。</p></div></div></article></section></section><section class="sec" id="s7-6" data-label="7.6 本章小結"><h2><span class="num">7.6</span>本章小結</h2><ul>
+<li>GLM = 分配（隨機成分）+ 線性預測式 + 連結函數；<code>glm(y ~ x, family = ..., data)</code>。</li>
+<li>二元：<code>family = binomial</code>（logit）。係數是 log-odds，<code>exp()</code> 後是勝算比；<code>predict(type = &quot;response&quot;)</code> 得機率，再用門檻分類。</li>
+<li>評估分類：混淆矩陣、正確率、敏感度、特異度；ROC 曲線與 AUC 與門檻無關。要在測試集上評估。</li>
+<li>計數：<code>family = poisson</code>（log）。<code>exp(係數)</code> 是平均次數的倍數；檢查過度離散（偏差／自由度、<code>dispersiontest()</code>），必要時改用 <code>quasipoisson</code> 或 <code>MASS::glm.nb()</code>。</li>
+<li>不同曝險量下的計數加 <code>offset(log(曝險量))</code>，模型描述的是率。</li>
+</ul></section>
+<nav class="pager"><a class="prev" href="ch06.html">← 第 6 章</a><a class="next" href="ch08.html">第 8 章 →</a></nav></main>
+<script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
+<script src="assets/search.js?v=7a3ed758"></script>
+<script src="assets/site.js?v=24ecedd3"></script>
+</body></html>
