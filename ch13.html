@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 13 章 社群網路分析｜商業分析：R課程筆記</title>
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css?v=113869c6">
+</head><body data-page="ch13" data-mode="course">
+<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
+<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course" class=on>課程</a><a href="hw01.html" data-mode="hw">作業</a></nav><label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option><option value="ch09.html">第 9 章　非監督式學習：分群</option><option value="ch10.html">第 10 章　監督式學習：分類</option><option value="ch11.html">第 11 章　維度縮減：PCA 與 SPCA</option><option value="ch12.html">第 12 章　中文文字探勘</option><option value="ch13.html" selected>第 13 章　社群網路分析</option><option value="ch14.html">第 14 章　A/B 測試</option><option value="ch15.html">第 15 章　資料分析總覽</option></select></div></div>
+<main class="wrap"><header class="ch-head"><h1>第 13 章　社群網路分析</h1><details class="ch-toc"><summary>本章目錄（10 節）</summary><ol><li><a href="#s13-1"><span>13.1</span>節點、邊與方向</a></li><li><a href="#s13-2"><span>13.2</span>兩種表示法：相鄰矩陣與邊列表</a></li><li><a href="#s13-3"><span>13.3</span>用 statnet 建立與描述網路</a></li><li><a href="#s13-4"><span>13.4</span>用 igraph 分析</a></li><li><a href="#s13-5"><span>13.5</span>中心性：誰是關鍵人物</a></li><li><a href="#s13-6"><span>13.6</span>社群偵測</a></li><li><a href="#s13-7"><span>13.7</span>課堂實作：PTT 推文網路</a></li><li><a href="#s13-8"><span>13.8</span>媒體網路完整範例</a></li><li><a href="#s13-9"><span>13.9</span>延伸：詞彙共現網路</a></li><li><a href="#s13-10"><span>13.10</span>小結</a></li></ol></details></header>
+<div class="ch-intro"><p>前面的資料都是「一個個獨立的個體」：每位顧客、每間公司各占一列。但很多時候，<strong>個體之間的關係</strong>才是重點——誰轉帳給誰、誰推了誰的文章、哪些詞常一起出現、哪些媒體互相引用。<strong>社會網路分析</strong>（Social Network Analysis，SNA）把這些關係抽象成「圖」（graph），用來回答：誰是關鍵人物？訊息怎麼擴散？哪些人自成一個小圈圈？</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
+</code></pre></div></div><section class="sec" id="s13-1" data-label="13.1 節點、邊與方向"><h2><span class="num">13.1</span>節點、邊與方向</h2><table>
+<thead>
+<tr>
+<th>名詞</th>
+<th>意思</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>節點</strong>（node／vertex）</td>
+<td>網路中的個體</td>
+<td>人、企業、網頁、帳戶、詞彙</td>
+</tr>
+<tr>
+<td><strong>邊</strong>（edge／link／tie）</td>
+<td>節點之間的關係</td>
+<td>朋友、轉帳、推文、超連結、共同出現</td>
+</tr>
+<tr>
+<td><strong>權重</strong>（weight）</td>
+<td>邊的強弱</td>
+<td>通訊次數、轉帳金額、推文次數</td>
+</tr>
+<tr>
+<td><strong>有向圖</strong>（directed）</td>
+<td>邊有方向：A → B 不代表 B → A</td>
+<td>A 推了 B 的文章、A 轉帳給 B</td>
+</tr>
+<tr>
+<td><strong>無向圖</strong>（undirected）</td>
+<td>邊沒有方向，關係對稱</td>
+<td>A 和 B 是朋友、兩個詞出現在同一篇文章</td>
+</tr>
+</tbody>
+</table>
+<p>老師講義舉的商業應用：</p>
+<ul>
+<li><strong>金融保險詐欺偵測</strong>：把帳戶、地址、電話、轉帳、保單、理賠串成網路，自動找出可疑的集團（彼此連結特別緊密的一群人），節省人工調查時間。</li>
+<li><strong>客戶行銷</strong>：依社群關係把客戶分組，找出群體中的<strong>意見領袖</strong>（leader），針對他們設計行銷活動以提高報酬率，或優先挽留他們以降低流失。</li>
+</ul><section class="cc" id="cc-s13-1"><h3 class="cc-h">Concept Check：13.1 節點、邊與方向</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s13-1-1" data-label="13.1 節點、邊與方向 Q1"><div class="q-meta"><h4><a href="#q-s13-1-1">Q1</a></h4><span class="q-kind">選擇｜易</span><span class="q-title">有向圖</span></div><div class="q-text"><p>Which relationship is most naturally represented by a <strong>directed</strong> network?</p></div><ol class="opts"><li><b>(A)</b><span>Two people are classmates</span></li><li><b>(B)</b><span>Two companies share a board member</span></li><li><b>(C)</b><span>Two words appear in the same news document</span></li><li><b>(D)</b><span>User A replies to user B's post</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>哪一種關係最適合用「有向網路」表示？</p></div><div class="ans"><strong>答案 (D)</strong><p>User A replies to user B's post</p></div><div class="why"><p class="sh">解析</p><p>A 回覆 B 的文章不代表 B 也回覆 A，關係有方向。同學、同時出現、共同董事都是對稱關係，用無向圖。</p></div></div></article></section></section><section class="sec" id="s13-2" data-label="13.2 兩種表示法：相鄰矩陣與邊列表"><h2><span class="num">13.2</span>兩種表示法：相鄰矩陣與邊列表</h2><h3 id="s13-2-1">相鄰矩陣</h3>
+<p><strong>相鄰矩陣</strong>（adjacency matrix，社會網路分析也叫 sociomatrix）是 n × n 的方陣：第 i 列第 j 欄為 1，代表有一條從節點 i 指向節點 j 的邊。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">netmat1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rbind</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">))</span>
+<span class="nf">rownames</span><span class="p">(</span><span class="n">netmat1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">colnames</span><span class="p">(</span><span class="n">netmat1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">LETTERS</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">]</span>
+<span class="n">netmat1</span>
+</code></pre></div>
+<pre class="out"><code>##   A B C D E
+## A 0 1 1 0 0
+## B 0 0 1 1 0
+## C 0 1 0 0 0
+## D 0 0 0 0 0
+## E 0 0 1 0 0</code></pre>
+<p>讀法：第 A 列有兩個 1（B、C 欄），代表 A → B、A → C。第 D 列全是 0：D 沒有指向任何人；第 D 欄有一個 1：只有 B 指向 D。</p>
+<h3 id="s13-2-2">邊列表</h3>
+<p><strong>邊列表</strong>（edge list）每一列是一條邊：起點、終點（可以再加權重等邊的屬性）：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">netmat2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rbind</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span>
+<span class="w">                 </span><span class="nf">c</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span>
+<span class="n">netmat2</span>
+</code></pre></div>
+<pre class="out"><code>##      [,1] [,2]
+## [1,]    1    2
+## [2,]    1    3
+## [3,]    2    3
+## [4,]    2    4
+## [5,]    3    2
+## [6,]    5    3</code></pre>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>相鄰矩陣</th>
+<th>邊列表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>大小</td>
+<td>n² 個格子</td>
+<td>邊數 × 2（或 3）</td>
+</tr>
+<tr>
+<td>優點</td>
+<td>直觀，適合矩陣運算</td>
+<td>省空間，適合大型稀疏網路，方便加入邊的屬性</td>
+</tr>
+<tr>
+<td>建議</td>
+<td>需要矩陣運算時再轉換</td>
+<td><strong>收集資料時用這種</strong></td>
+</tr>
+</tbody>
+</table>
+<p>一萬個帳戶的轉帳網路，相鄰矩陣有一億個格子、絕大多數是 0；邊列表只記錄真的有轉帳的那幾萬筆。</p><section class="cc" id="cc-s13-2"><h3 class="cc-h">Concept Check：13.2 兩種表示法：相鄰矩陣與邊列表</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s13-2-1" data-label="13.2 兩種表示法：相鄰矩陣與邊列表 Q1"><div class="q-meta"><h4><a href="#q-s13-2-1">Q1</a></h4><span class="q-kind">填空｜易</span><span class="q-title">相鄰矩陣</span></div><div class="q-text"><p>In the adjacency matrix <code>netmat1</code> above, how many nodes does node B point to, and how many nodes point to node C?</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>在上面的 netmat1 中，B 指向幾個節點？有幾個節點指向 C？</p></div><div class="ans"><strong>答案</strong><p>B 指向 2 個（C、D：B 那一列的 1 的個數）；有 3 個節點指向 C（A、B、E：C 那一欄的 1 的個數）。</p></div><div class="why"><p class="sh">解析</p><p>列加總是出度（out-degree），欄加總是入度（in-degree）：<code>rowSums(netmat1)</code>、<code>colSums(netmat1)</code>。</p></div></div></article></section></section><section class="sec" id="s13-3" data-label="13.3 用 statnet 建立與描述網路"><h2><span class="num">13.3</span>用 statnet 建立與描述網路</h2><p><strong>statnet</strong> 是社會網路分析的一整套套件（<code>install.packages(&quot;statnet&quot;, dependencies = TRUE)</code> 會一次裝好 network、sna 等），提供 <code>network</code> 物件與 <code>gplot()</code> 畫圖。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">network</span><span class="p">)</span><span class="w">    </span><span class="c1"># statnet 的一部分：network 物件</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">sna</span><span class="p">)</span><span class="w">        </span><span class="c1"># statnet 的一部分：網路指標與 gplot()</span>
+
+<span class="n">net1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.network</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">netmat1</span><span class="p">,</span>
+<span class="w">                   </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w">            </span><span class="c1"># 有向圖</span>
+<span class="w">                   </span><span class="n">loops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w">              </span><span class="c1"># 不允許自己連到自己</span>
+<span class="w">                   </span><span class="n">matrix.type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"adjacency"</span><span class="p">)</span><span class="w">  </span><span class="c1"># 輸入是相鄰矩陣</span>
+<span class="nf">network.vertex.names</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">LETTERS</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">]</span>
+<span class="nf">class</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] &quot;network&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">summary</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## Network attributes:
+##   vertices = 5
+##   directed = TRUE
+##   hyper = FALSE
+##   loops = FALSE
+##   multiple = FALSE
+##   bipartite = FALSE
+##  total edges = 6 
+##    missing edges = 0 
+##    non-missing edges = 6 
+##  density = 0.3 
+## 
+## Vertex attributes:
+##   vertex.names:
+##    character valued attribute
+##    5 valid vertex names
+## 
+## No edge attributes
+## 
+## Network adjacency matrix:
+##   A B C D E
+## A 0 1 1 0 0
+## B 0 0 1 1 0
+## C 0 1 0 0 0
+## D 0 0 0 0 0
+## E 0 0 1 0 0</code></pre>
+<p>用邊列表建立：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">net2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">network</span><span class="p">(</span><span class="n">netmat2</span><span class="p">,</span><span class="w"> </span><span class="n">matrix.type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"edgelist"</span><span class="p">)</span>
+<span class="nf">network.vertex.names</span><span class="p">(</span><span class="n">net2</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"A"</span><span class="p">,</span><span class="w"> </span><span class="s">"B"</span><span class="p">,</span><span class="w"> </span><span class="s">"C"</span><span class="p">,</span><span class="w"> </span><span class="s">"D"</span><span class="p">,</span><span class="w"> </span><span class="s">"E"</span><span class="p">)</span>
+<span class="nf">as.sociomatrix</span><span class="p">(</span><span class="n">net2</span><span class="p">)</span><span class="w">                                  </span><span class="c1"># 轉回相鄰矩陣</span>
+</code></pre></div>
+<pre class="out"><code>##   A B C D E
+## A 0 1 1 0 0
+## B 0 0 1 1 0
+## C 0 1 0 0 0
+## D 0 0 0 0 0
+## E 0 0 1 0 0</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">as.matrix</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span><span class="w"> </span><span class="n">matrix.type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"edgelist"</span><span class="p">)</span><span class="w">             </span><span class="c1"># 相鄰矩陣轉邊列表</span>
+</code></pre></div>
+<pre class="out"><code>##      [,1] [,2]
+## [1,]    1    2
+## [2,]    3    2
+## [3,]    1    3
+## [4,]    2    3
+## [5,]    5    3
+## [6,]    2    4
+## attr(,&quot;n&quot;)
+## [1] 5
+## attr(,&quot;vnames&quot;)
+## [1] &quot;A&quot; &quot;B&quot; &quot;C&quot; &quot;D&quot; &quot;E&quot;</code></pre>
+<p><code>netmat1</code> 和 <code>netmat2</code> 其實是<strong>同一個網路</strong>的兩種寫法——<code>as.sociomatrix(net2)</code> 和 <code>netmat1</code> 完全一樣。</p>
+<h3 id="s13-3-1">網路整體指標</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">network.size</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span><span class="w">    </span><span class="c1"># 節點數</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 5</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">gden</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span><span class="w">            </span><span class="c1"># 密度</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.3</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">gtrans</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span><span class="w">          </span><span class="c1"># 群聚係數（遞移性）</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.4</code></pre>
+<ul>
+<li><strong>密度</strong>（density）= 實際邊數 ÷ 最大可能邊數，介於 0～1。5 個節點的有向圖最多有 5 × 4 = 20 條邊，這裡有 6 條，密度 = 6/20 = 0.3。</li>
+<li><strong>群聚係數</strong>（clustering coefficient，也叫遞移性 transitivity）：「朋友的朋友也是朋友」的程度。A → B、B → C 時，A → C 是否也存在？介於 0～1，越高代表小圈圈越緊密。</li>
+</ul>
+<h3 id="s13-3-2">畫網路圖</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">mar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span>
+<span class="nf">set.seed</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+<span class="nf">gplot</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span><span class="w"> </span><span class="n">displaylabels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"預設布局"</span><span class="p">)</span>
+<span class="nf">gplot</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span><span class="w"> </span><span class="n">gmode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"graph"</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"circle"</span><span class="p">,</span><span class="w"> </span><span class="n">displaylabels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"環形、無向"</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-7-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-7-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span>
+</code></pre></div>
+<ul>
+<li><code>displaylabels = TRUE</code> 顯示節點名稱。</li>
+<li><code>gmode = &quot;graph&quot;</code> 當成無向圖畫（不畫箭頭）；<code>mode = &quot;circle&quot;</code> 環形布局、<code>&quot;mds&quot;</code> 依距離擺放。</li>
+<li>布局有隨機性，先 <code>set.seed()</code> 每次才會畫得一樣。</li>
+<li><code>GGally::ggnet2()</code> 可以用 ggplot2 的風格畫網路圖（老師提供的參考：briatte.github.io/ggnet）。</li>
+</ul>
+<h3 id="s13-3-3">節點屬性</h3>
+<p>節點可以帶屬性（性別、年齡、客群……），再用顏色、大小呈現：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">gender</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="s">"Female"</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="s">"Male"</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span>
+<span class="nf">set.vertex.attribute</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span><span class="w"> </span><span class="s">"Gender"</span><span class="p">,</span><span class="w"> </span><span class="n">gender</span><span class="p">)</span>
+<span class="nf">set.seed</span><span class="p">(</span><span class="m">2026</span><span class="p">)</span>
+<span class="n">age</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="nf">rnorm</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span>
+<span class="nf">set.vertex.attribute</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span><span class="w"> </span><span class="s">"Age"</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">)</span>
+<span class="nf">get.vertex.attribute</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span><span class="w"> </span><span class="s">"Gender"</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] &quot;Female&quot; &quot;Female&quot; &quot;Female&quot; &quot;Male&quot;   &quot;Male&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">node_colors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="s">""</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w">                   </span><span class="c1"># 用 for 迴圈依性別決定顏色</span>
+<span class="kr">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nf">get.vertex.attribute</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span><span class="w"> </span><span class="s">"Gender"</span><span class="p">)[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"Female"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">node_colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">"royalblue"</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">node_colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">"maroon"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="n">node_colors</span>
+</code></pre></div>
+<pre class="out"><code>## [1] &quot;royalblue&quot; &quot;royalblue&quot; &quot;royalblue&quot; &quot;maroon&quot;    &quot;maroon&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">set.seed</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+<span class="nf">plot.network</span><span class="p">(</span><span class="n">net1</span><span class="p">,</span>
+<span class="w">             </span><span class="n">vertex.col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node_colors</span><span class="p">,</span><span class="w">   </span><span class="c1"># 顏色：性別</span>
+<span class="w">             </span><span class="n">vertex.cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w">       </span><span class="c1"># 大小：年齡</span>
+<span class="w">             </span><span class="n">displaylabels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span>
+<span class="w">             </span><span class="n">label.pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w">              </span><span class="c1"># 標籤直接畫在節點上</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-8-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-8-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<div class="box warn"><span class="tag">常見錯誤</span><strong class="bt">statnet 與 igraph 的函數撞名</strong><p>statnet（sna）和 igraph 都有 <code>degree()</code>、<code>betweenness()</code>、<code>closeness()</code> 等同名函數，兩個同時載入時，後載入的會蓋掉先載入的。做法：一次只載入一個（用 <code>detach(&quot;package:sna&quot;)</code> 卸載），或寫明 <code>igraph::degree()</code>。老師講義也提到：如果 <code>set.vertex.attribute()</code> 不能用，先 <code>detach(&quot;package:igraph&quot;)</code>。</p></div>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">detach</span><span class="p">(</span><span class="s">"package:sna"</span><span class="p">);</span><span class="w"> </span><span class="nf">detach</span><span class="p">(</span><span class="s">"package:network"</span><span class="p">)</span><span class="w">    </span><span class="c1"># 接下來改用 igraph</span>
+</code></pre></div><section class="cc" id="cc-s13-3"><h3 class="cc-h">Concept Check：13.3 用 statnet 建立與描述網路</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s13-3-1" data-label="13.3 用 statnet 建立與描述網路 Q1"><div class="q-meta"><h4><a href="#q-s13-3-1">Q1</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">密度</span></div><div class="q-text"><p>A directed network without self-loops has 6 nodes and 9 edges. What is its density?</p></div><ol class="opts"><li><b>(A)</b><span>0.25</span></li><li><b>(B)</b><span>0.50</span></li><li><b>(C)</b><span>0.30</span></li><li><b>(D)</b><span>0.60</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>6 個節點、9 條邊、不允許自我連結的有向網路，密度是多少？</p></div><div class="ans"><strong>答案 (C)</strong><p>0.30</p></div><div class="why"><p class="sh">解析</p><p>有向圖最多 n(n − 1) = 6 × 5 = 30 條邊，密度 = 9 / 30 = 0.30。若是無向圖，最多 n(n − 1)/2 = 15 條，密度就是 0.60。</p></div></div></article></section></section><section class="sec" id="s13-4" data-label="13.4 用 igraph 分析"><h2><span class="num">13.4</span>用 igraph 分析</h2><p><strong>igraph</strong> 是功能最完整的網路分析套件，適合中大型網路，也提供各種中心性指標與社群偵測演算法。</p>
+<h3 id="s13-4-1">建立 igraph 物件</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">igraph</span><span class="p">)</span>
+
+<span class="n">g_adj_d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_adjacency_matrix</span><span class="p">(</span><span class="n">netmat1</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"directed"</span><span class="p">)</span><span class="w">     </span><span class="c1"># 從相鄰矩陣</span>
+<span class="n">g_adj_u</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_adjacency_matrix</span><span class="p">(</span><span class="n">netmat1</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"max"</span><span class="p">)</span><span class="w">         </span><span class="c1"># 無向：有任一方向的邊就算相連</span>
+<span class="n">g_el_u</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_edgelist</span><span class="p">(</span><span class="n">netmat2</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">              </span><span class="c1"># 從邊列表</span>
+
+<span class="n">edge_list</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tibble</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">),</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span>
+<span class="w">                    </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span>
+<span class="n">node_list</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tibble</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">LETTERS</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">])</span>
+<span class="n">net_ig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_data_frame</span><span class="p">(</span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge_list</span><span class="p">,</span><span class="w"> </span><span class="n">vertices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node_list</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">  </span><span class="c1"># 從資料框</span>
+<span class="n">net_ig</span>
+</code></pre></div>
+<pre class="out"><code>## IGRAPH 83d9ebf DNW- 5 6 -- 
+## + attr: name (v/c), label (v/c), weight (e/n)
+## + edges from 83d9ebf (vertex names):
+## [1] 1-&gt;2 1-&gt;3 2-&gt;3 2-&gt;4 3-&gt;2 5-&gt;3</code></pre>
+<p><code>graph_from_data_frame(d = 邊的資料框, vertices = 節點的資料框)</code> 是最實用的方法：邊資料框的前兩欄是起點、終點，其他欄自動成為邊的屬性（這裡的 weight）；節點資料框的第一欄是 id，其他欄成為節點屬性。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">V</span><span class="p">(</span><span class="n">net_ig</span><span class="p">)</span><span class="w">                 </span><span class="c1"># 所有節點</span>
+</code></pre></div>
+<pre class="out"><code>## + 5/5 vertices, named, from 83d9ebf:
+## [1] 1 2 3 4 5</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">E</span><span class="p">(</span><span class="n">net_ig</span><span class="p">)</span><span class="w">                 </span><span class="c1"># 所有邊</span>
+</code></pre></div>
+<pre class="out"><code>## + 6/6 edges from 83d9ebf (vertex names):
+## [1] 1-&gt;2 1-&gt;3 2-&gt;3 2-&gt;4 3-&gt;2 5-&gt;3</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">E</span><span class="p">(</span><span class="n">net_ig</span><span class="p">)</span><span class="o">$</span><span class="n">weight</span><span class="w">          </span><span class="c1"># 邊的權重</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 1 3 4 3 1 2</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">vertex_attr</span><span class="p">(</span><span class="n">net_ig</span><span class="p">)</span><span class="w">       </span><span class="c1"># 所有節點屬性</span>
+</code></pre></div>
+<pre class="out"><code>## $name
+## [1] &quot;1&quot; &quot;2&quot; &quot;3&quot; &quot;4&quot; &quot;5&quot;
+## 
+## $label
+## [1] &quot;A&quot; &quot;B&quot; &quot;C&quot; &quot;D&quot; &quot;E&quot;</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">net_ig</span><span class="p">[]</span><span class="w">                  </span><span class="c1"># 相鄰矩陣（有權重時格子是權重）</span>
+</code></pre></div>
+<pre class="out"><code>## 5 x 5 sparse Matrix of class &quot;dgCMatrix&quot;
+##   1 2 3 4 5
+## 1 . 1 3 . .
+## 2 . . 4 3 .
+## 3 . 1 . . .
+## 4 . . . . .
+## 5 . . 2 . .</code></pre>
+<p><code>V()</code>（vertices）取節點、<code>E()</code>（edges）取邊，後面加 <code>$屬性名</code> 讀取或設定屬性：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">V</span><span class="p">(</span><span class="n">g_adj_d</span><span class="p">)</span><span class="o">$</span><span class="n">color</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"royalblue"</span><span class="p">,</span><span class="w"> </span><span class="s">"royalblue"</span><span class="p">,</span><span class="w"> </span><span class="s">"royalblue"</span><span class="p">,</span><span class="w"> </span><span class="s">"maroon"</span><span class="p">,</span><span class="w"> </span><span class="s">"maroon"</span><span class="p">)</span>
+<span class="nf">E</span><span class="p">(</span><span class="n">g_adj_d</span><span class="p">)</span><span class="o">$</span><span class="n">width</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">2</span>
+<span class="nf">set.seed</span><span class="p">(</span><span class="m">3</span><span class="p">)</span>
+<span class="nf">plot</span><span class="p">(</span><span class="n">g_adj_d</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">30</span><span class="p">,</span><span class="w"> </span><span class="n">edge.arrow.size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.6</span><span class="p">,</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">layout_with_fr</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-12-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-12-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<table>
+<thead>
+<tr>
+<th>布局函數</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>layout_with_fr</code>（<code>layout.fruchterman.reingold</code>）</td>
+<td>力導向：模擬彈簧，有連結的拉近、沒連結的推開（預設、最自然）</td>
+</tr>
+<tr>
+<td><code>layout_in_circle</code></td>
+<td>環形</td>
+</tr>
+<tr>
+<td><code>layout_as_star</code></td>
+<td>星形：一個中心節點</td>
+</tr>
+<tr>
+<td><code>layout_as_tree</code></td>
+<td>樹狀，適合階層</td>
+</tr>
+<tr>
+<td><code>layout_on_grid</code>、<code>layout_randomly</code></td>
+<td>網格、隨機</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s13-4-2">距離與路徑</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">distances</span><span class="p">(</span><span class="n">g_adj_u</span><span class="p">)</span><span class="w">            </span><span class="c1"># 每一對節點的最短路徑長度（無向）</span>
+</code></pre></div>
+<pre class="out"><code>##   A B C D E
+## A 0 1 1 2 2
+## B 1 0 1 1 2
+## C 1 1 0 2 1
+## D 2 1 2 0 3
+## E 2 2 1 3 0</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">mean_distance</span><span class="p">(</span><span class="n">g_adj_u</span><span class="p">)</span><span class="w">        </span><span class="c1"># 平均路徑長度</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 1.6</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">degree_distribution</span><span class="p">(</span><span class="n">g_adj_u</span><span class="p">)</span><span class="w">  </span><span class="c1"># 度數分配：度數為 0,1,2,... 的節點比例</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.0 0.4 0.2 0.4</code></pre>
+<p><strong>平均路徑長度</strong>衡量資訊在網路中傳遞的效率：越短代表訊息越容易傳遍整個網路（「六度分隔」理論說的就是人類社會的平均路徑長度很短）。</p><section class="cc" id="cc-s13-4"><h3 class="cc-h">Concept Check：13.4 用 igraph 分析</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s13-4-1" data-label="13.4 用 igraph 分析 Q1"><div class="q-meta"><h4><a href="#q-s13-4-1">Q1</a></h4><span class="q-kind">寫程式｜易</span><span class="q-title">入度與出度</span></div><div class="q-text"><p>Using igraph and the adjacency matrix <code>netmat1</code>, write code to build a directed network and compute the in-degree and out-degree of each node. Which node receives the most ties?</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>用 netmat1 建立有向網路，計算每個節點的入度與出度。哪個節點被指向最多次？</p></div><div class="ans"><strong>答案</strong><div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">g</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_adjacency_matrix</span><span class="p">(</span><span class="n">netmat1</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"directed"</span><span class="p">)</span>
+<span class="nf">degree</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"in"</span><span class="p">)</span>
+<span class="nf">degree</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"out"</span><span class="p">)</span>
+</code></pre></div>
+<p>C 的入度最高（3：被 A、B、E 指向）。</p></div><div class="why"><p class="sh">解析</p><p>老師網站的課後練習 1。也可以直接用 colSums(netmat1)（入度）與 rowSums(netmat1)（出度）驗算。</p></div></div></article></section></section><section class="sec" id="s13-5" data-label="13.5 中心性：誰是關鍵人物"><h2><span class="num">13.5</span>中心性：誰是關鍵人物</h2><p><strong>中心性</strong>（centrality）衡量一個節點在網路中有多重要，但「重要」有不同的定義：</p>
+<table>
+<thead>
+<tr>
+<th>指標</th>
+<th>igraph 函數</th>
+<th>意思</th>
+<th>商業解讀</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>度數中心性</strong></td>
+<td><code>degree(g, mode = )</code></td>
+<td>連了幾條邊。出度＝影響了多少人；入度＝被多少人影響</td>
+<td>人脈最廣的人</td>
+</tr>
+<tr>
+<td><strong>強度</strong></td>
+<td><code>strength(g, weights = )</code></td>
+<td>加權版的度數：邊的權重加總</td>
+<td>互動最頻繁的人</td>
+</tr>
+<tr>
+<td><strong>接近中心性</strong></td>
+<td><code>closeness()</code></td>
+<td>到其他所有節點的距離越短越高</td>
+<td>訊息傳得最快的人</td>
+</tr>
+<tr>
+<td><strong>調和中心性</strong></td>
+<td><code>harmonic_centrality()</code></td>
+<td>接近中心性的改良，網路不連通時也能算</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><strong>中介中心性</strong></td>
+<td><code>betweenness()</code></td>
+<td>站在其他節點「最短路徑中間」的次數</td>
+<td><strong>橋梁</strong>：拿掉他網路可能斷成兩半</td>
+</tr>
+<tr>
+<td><strong>PageRank</strong></td>
+<td><code>page_rank()$vector</code></td>
+<td>被<strong>重要的</strong>節點連到，自己也更重要</td>
+<td>Google 搜尋排名的核心演算法</td>
+</tr>
+</tbody>
+</table>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">g</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_adjacency_matrix</span><span class="p">(</span><span class="n">netmat1</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"directed"</span><span class="p">)</span>
+<span class="nf">tibble</span><span class="p">(</span>
+<span class="w">  </span><span class="n">node</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">$</span><span class="n">name</span><span class="p">,</span>
+<span class="w">  </span><span class="n">in_degree</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="nf">degree</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"in"</span><span class="p">),</span>
+<span class="w">  </span><span class="n">out_degree</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nf">degree</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"out"</span><span class="p">),</span>
+<span class="w">  </span><span class="n">betweenness</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">betweenness</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span>
+<span class="w">  </span><span class="n">pagerank</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="nf">page_rank</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">$</span><span class="n">vector</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 5 × 5
+##   node  in_degree out_degree betweenness pagerank
+##   &lt;chr&gt;     &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;
+## 1 A             0          2           0    0.067
+## 2 B             2          2           3    0.35 
+## 3 C             3          1           2    0.301
+## 4 D             1          0           0    0.216
+## 5 E             0          1           0    0.067</code></pre>
+<p>C 被最多人指向（入度 3）；但 PageRank 最高的是 B——它的兩條入邊之一來自 C，而 C 本身就很重要，「被重要的人指向」讓 B 的分數更高。B 也位在 A、C、E 通往 D 的路上（D 只有 B 指向它），所以中介中心性最高。</p><section class="cc" id="cc-s13-5"><h3 class="cc-h">Concept Check：13.5 中心性：誰是關鍵人物</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s13-5-1" data-label="13.5 中心性：誰是關鍵人物 Q1"><div class="q-meta"><h4><a href="#q-s13-5-1">Q1</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">中介中心性</span></div><div class="q-text"><p>In a fraud-detection network, removing one account would split the network into two disconnected groups. Which centrality measure is most likely to be highest for this account?</p></div><ol class="opts"><li><b>(A)</b><span>Degree centrality</span></li><li><b>(B)</b><span>Betweenness centrality</span></li><li><b>(C)</b><span>Average edge weight of the account</span></li><li><b>(D)</b><span>Network density</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>在詐欺偵測網路中，移除某個帳戶會讓網路斷成兩群。這個帳戶哪一種中心性最可能最高？</p></div><div class="ans"><strong>答案 (B)</strong><p>Betweenness centrality</p></div><div class="why"><p class="sh">解析</p><p>中介中心性衡量節點位在其他節點之間最短路徑上的次數。兩群之間唯一的橋梁，所有跨群的最短路徑都經過它，中介中心性最高；它的連結數不一定多。密度是整個網路的指標，不是節點的。</p></div></div></article><article class="q" id="q-s13-5-2" data-label="13.5 中心性：誰是關鍵人物 Q2"><div class="q-meta"><h4><a href="#q-s13-5-2">Q2</a></h4><span class="q-kind">簡答｜中</span><span class="q-title">PageRank 與度數</span></div><div class="q-text"><p>Explain how PageRank differs from (in-)degree centrality.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>說明 PageRank 與入度中心性的差別。</p></div><div class="ans"><strong>答案</strong><p>In-degree only counts how many ties a node receives; every incoming tie counts the same. PageRank also considers the importance of the nodes sending the ties: being pointed to by an important (high-PageRank) node adds more than being pointed to by an unimportant one. So a node with few incoming ties can still have a high PageRank if those ties come from central nodes, which is why Google used it to rank web pages.</p></div><div class="why"><p class="sh">解析</p><p>「連到重要的人，自己也會更重要」。</p></div></div></article></section></section><section class="sec" id="s13-6" data-label="13.6 社群偵測"><h2><span class="num">13.6</span>社群偵測</h2><p><strong>社群偵測</strong>（community detection）找出「內部連結緊密、彼此之間連結稀疏」的節點子群——用網路結構來分群（第 9 章是用變數的距離分群）。應用：行銷的客群切分、找出可疑的詐騙集團。</p>
+<table>
+<thead>
+<tr>
+<th>演算法</th>
+<th>函數</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>邊中介性</td>
+<td><code>cluster_edge_betweenness()</code></td>
+<td>反覆移除中介性最高的邊（最像「橋」的邊），直到網路分裂；適合小網路</td>
+</tr>
+<tr>
+<td>隨機遊走</td>
+<td><code>cluster_walktrap()</code></td>
+<td>隨機遊走容易停留在同一個社群</td>
+</tr>
+<tr>
+<td>Louvain</td>
+<td><code>cluster_louvain()</code></td>
+<td>貪婪地最大化模組化值，速度快，適合大網路（無向）</td>
+</tr>
+<tr>
+<td>快速貪婪</td>
+<td><code>cluster_fast_greedy()</code></td>
+<td>同樣最大化模組化值，無向網路</td>
+</tr>
+</tbody>
+</table>
+<p>評估分群好壞的指標是<strong>模組化值</strong>（modularity，Q）：介於 −1 到 1，<strong>Q &gt; 0.3</strong> 通常代表有明顯的社群結構；Q ≈ 0 表示和隨機網路差不多。</p>
+<p>以老師網站練習 2 的 UKfaculty 資料（英國某大學 81 位教職員的友誼網路）為例：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">igraphdata</span><span class="p">)</span>
+<span class="nf">data</span><span class="p">(</span><span class="n">UKfaculty</span><span class="p">)</span>
+<span class="n">UKfaculty</span>
+</code></pre></div>
+<pre class="out"><code>## IGRAPH 6f42903 D-W- 81 817 -- 
+## + attr: Type (g/c), Date (g/c), Citation (g/c), Author (g/c),
+## | Group (v/n), weight (e/n)
+## + edges from 6f42903:
+##  [1] 57-&gt;52 76-&gt;42 12-&gt;69 43-&gt;34 28-&gt;47 58-&gt;51  7-&gt;29 40-&gt;71  5-&gt;37
+## [10] 48-&gt;55  6-&gt;58 21-&gt; 8 28-&gt;69 43-&gt;21 67-&gt;58 65-&gt;42  5-&gt;67 52-&gt;75
+## [19] 37-&gt;64  4-&gt;36 12-&gt;49 19-&gt;46 37-&gt; 9 74-&gt;36 62-&gt; 1 15-&gt; 2 72-&gt;49
+## [28] 46-&gt;62  2-&gt;29 40-&gt;12 22-&gt;29 71-&gt;69  4-&gt; 3 37-&gt;69  5-&gt; 6 77-&gt;13
+## [37] 23-&gt;49 52-&gt;35 20-&gt;14 62-&gt;70 34-&gt;35 76-&gt;72  7-&gt;42 37-&gt;42 51-&gt;80
+## [46] 38-&gt;45 62-&gt;64 36-&gt;53 62-&gt;77 17-&gt;61  7-&gt;68 46-&gt;29 44-&gt;53 18-&gt;58
+## [55] 12-&gt;16 72-&gt;42 52-&gt;32 58-&gt;21 38-&gt;17 15-&gt;51 22-&gt; 7 22-&gt;69  5-&gt;13
+## + ... omitted several edges</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">uk</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as_undirected</span><span class="p">(</span><span class="n">UKfaculty</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"collapse"</span><span class="p">)</span><span class="w">     </span><span class="c1"># 轉成無向</span>
+<span class="n">ceb</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">suppressWarnings</span><span class="p">(</span><span class="nf">cluster_edge_betweenness</span><span class="p">(</span><span class="n">uk</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">))</span>
+<span class="nf">length</span><span class="p">(</span><span class="n">ceb</span><span class="p">)</span><span class="w">                      </span><span class="c1"># 找到幾個社群</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 5</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">sizes</span><span class="p">(</span><span class="n">ceb</span><span class="p">)</span><span class="w">                       </span><span class="c1"># 每個社群幾個人</span>
+</code></pre></div>
+<pre class="out"><code>## Community sizes
+##  1  2  3  4  5 
+## 17 32 28  2  2</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">modularity</span><span class="p">(</span><span class="n">ceb</span><span class="p">)</span><span class="w">                  </span><span class="c1"># 模組化值</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.4285</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">table</span><span class="p">(</span>社群<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">membership</span><span class="p">(</span><span class="n">ceb</span><span class="p">),</span><span class="w"> </span>學院<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">uk</span><span class="p">)</span><span class="o">$</span><span class="n">Group</span><span class="p">)</span><span class="w">   </span><span class="c1"># 社群 vs 真實所屬學院</span>
+</code></pre></div>
+<pre class="out"><code>##     學院
+## 社群  1  2  3  4
+##    1  0  0 17  0
+##    2 29  1  1  1
+##    3  0 26  1  1
+##    4  2  0  0  0
+##    5  2  0  0  0</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">set.seed</span><span class="p">(</span><span class="m">4</span><span class="p">)</span>
+<span class="nf">plot</span><span class="p">(</span><span class="n">ceb</span><span class="p">,</span><span class="w"> </span><span class="n">uk</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-15-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-15-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<p>模組化值 0.43 遠大於 0.3，代表網路有很明顯的社群結構；對照教職員真實所屬的學院（Group），偵測出的社群大致就是學院——同一個學院的人彼此是朋友，跨學院的友誼較少。</p><section class="cc" id="cc-s13-6"><h3 class="cc-h">Concept Check：13.6 社群偵測</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s13-6-1" data-label="13.6 社群偵測 Q1"><div class="q-meta"><h4><a href="#q-s13-6-1">Q1</a></h4><span class="q-kind">選擇｜易</span><span class="q-title">模組化值</span></div><div class="q-text"><p>After running community detection, you obtain a modularity of 0.02. What does this suggest?</p></div><ol class="opts"><li><b>(A)</b><span>The network has very strong community structure</span></li><li><b>(B)</b><span>Every node belongs to its own community</span></li><li><b>(C)</b><span>The algorithm found exactly two communities</span></li><li><b>(D)</b><span>Little community structure, close to random</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>社群偵測得到模組化值 0.02，代表什麼？</p></div><div class="ans"><strong>答案 (D)</strong><p>Little community structure, close to random</p></div><div class="why"><p class="sh">解析</p><p>Q 接近 0 表示社群內的連結並沒有比隨機網路多，社群結構不明顯；Q &gt; 0.3 才通常視為有意義的社群結構。</p></div></div></article></section></section><section class="sec" id="s13-7" data-label="13.7 課堂實作：PTT 推文網路"><h2><span class="num">13.7</span>課堂實作：PTT 推文網路</h2><p><code>ptt.txt</code> 是 PTT 某看板的推文資料，每一列是一筆推文：<code>V1</code> 是文章作者、<code>V2</code> 是推文的人（同一位作者對應很多不同的推文者）。同一個人推同一位作者好幾次，就合併成一條<strong>權重</strong>較大的邊：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">read.table</span><span class="p">(</span><span class="s">"ptt.txt"</span><span class="p">,</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="nf">dim</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 3512    2</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">head</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##         V1        V2
+## 1 ccxx9999  threebig
+## 2 ccxx9999 ivorysoap
+## 3 ccxx9999  artpower
+## 4 ccxx9999   ffreakk
+## 5 ccxx9999    lol404
+## 6 ccxx9999   sd09090</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">edge2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">group_by</span><span class="p">(</span><span class="n">V1</span><span class="p">,</span><span class="w"> </span><span class="n">V2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">summarise</span><span class="p">(</span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">n</span><span class="p">(),</span><span class="w"> </span><span class="n">.groups</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"drop"</span><span class="p">)</span><span class="w">          </span><span class="c1"># 每一對（作者, 推文者）出現幾次</span>
+<span class="n">edge2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">data.frame</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge2</span><span class="o">$</span><span class="n">V2</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge2</span><span class="o">$</span><span class="n">V1</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge2</span><span class="o">$</span><span class="n">weight</span><span class="p">)</span><span class="w">   </span><span class="c1"># 推文者 → 作者</span>
+<span class="n">edge2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">edge2</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">66</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">                               </span><span class="c1"># 老師只取前 66 條，圖比較清楚</span>
+<span class="nf">head</span><span class="p">(</span><span class="n">edge2</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##         from        to weight
+## 1     Drkate AsahiBeer      2
+## 2    Joey818 AsahiBeer      1
+## 3  Leoncheng AsahiBeer      1
+## 4 a240daniel AsahiBeer      1
+## 5 asdzxc1662 AsahiBeer      1
+## 6 cc02040326 AsahiBeer      1</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">g</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_data_frame</span><span class="p">(</span><span class="n">edge2</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="n">g</span>
+</code></pre></div>
+<pre class="out"><code>## IGRAPH 0bed37a DNW- 69 66 -- 
+## + attr: name (v/c), weight (e/n)
+## + edges from 0bed37a (vertex names):
+##  [1] Drkate     -&gt;AsahiBeer   Joey818    -&gt;AsahiBeer  
+##  [3] Leoncheng  -&gt;AsahiBeer   a240daniel -&gt;AsahiBeer  
+##  [5] asdzxc1662 -&gt;AsahiBeer   cc02040326 -&gt;AsahiBeer  
+##  [7] deerdriver -&gt;AsahiBeer   heavensun  -&gt;AsahiBeer  
+##  [9] imkoalatw  -&gt;AsahiBeer   DongWooNeKo-&gt;Ayanami5566
+## [11] Drkate     -&gt;Ayanami5566 Neverfor   -&gt;Ayanami5566
+## [13] archon     -&gt;Ayanami5566 bcs        -&gt;Ayanami5566
+## [15] click      -&gt;Ayanami5566 crimson11  -&gt;Ayanami5566
+## + ... omitted several edges</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">sort</span><span class="p">(</span><span class="nf">strength</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"all"</span><span class="p">),</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">6</span><span class="p">]</span><span class="w">     </span><span class="c1"># 加權度數（強度）前 6 名</span>
+</code></pre></div>
+<pre class="out"><code>##        Beef      CS5566 Ayanami5566   AsahiBeer       CenaC   GriefSeed 
+##          29          20          19          10           9           6</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">V</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">$</span><span class="n">size</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">strength</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w">                                  </span><span class="c1"># 節點大小 = 強度</span>
+<span class="nf">V</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">$</span><span class="n">label</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ifelse</span><span class="p">(</span><span class="nf">strength</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">$</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">)</span><span class="w">     </span><span class="c1"># 只標示重要的人</span>
+<span class="nf">set.seed</span><span class="p">(</span><span class="m">5</span><span class="p">)</span>
+<span class="nf">plot</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">edge.arrow.size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.label.color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"black"</span><span class="p">,</span>
+<span class="w">     </span><span class="n">vertex.label.dist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.5</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"tomato"</span><span class="p">,</span><span class="w"> </span><span class="n">edge.color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"grey"</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-18-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-18-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<ul>
+<li><code>strength()</code>：把每個節點所有邊的權重加總——推文最多次（或被推最多次）的人。</li>
+<li><code>ifelse(strength(g) &gt;= 10, V(g)$name, NA)</code>：強度 ≥ 10 的才顯示名字，其他設 NA 不畫，圖才不會一團亂。</li>
+</ul>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">deg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">degree</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"all"</span><span class="p">)</span>
+<span class="n">cls</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">closeness</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"all"</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">normalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="n">btw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">betweenness</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">normalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="nf">tibble</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">$</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">degree</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">closeness</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="n">betweenness</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">btw</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">arrange</span><span class="p">(</span><span class="nf">desc</span><span class="p">(</span><span class="n">betweenness</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">head</span><span class="p">(</span><span class="m">6</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 6 × 4
+##   id          degree closeness betweenness
+##   &lt;chr&gt;        &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;
+## 1 Ayanami5566     15     0.443       0.293
+## 2 CS5566          19     0.402       0.265
+## 3 crimson11        2     0.426       0.2  
+## 4 AsahiBeer        9     0.293       0.135
+## 5 Drkate           2     0.355       0.134
+## 6 Beef            19     1           0.075</code></pre>
+<p>（<code>weights = NA</code> 表示計算距離時不使用權重，每條邊長度都算 1——igraph 預設會把 weight 屬性當成「距離」，權重越大反而越遠，對互動次數這種「越大越親近」的權重並不合理。另外，這個網路是好幾個互不相連的小圈圈，接近中心性只在各自的圈圈裡計算，像 Beef 這樣只和自己的推文者相連的作者會得到 1，解讀時要搭配度數一起看。）中介中心性最高的帳號，就是串起不同作者推文圈的人——如果要在這個看板做口碑行銷，他們是最值得接觸的節點。</p></section><section class="sec" id="s13-8" data-label="13.8 媒體網路完整範例"><h2><span class="num">13.8</span>媒體網路完整範例</h2><p>老師的最後一個範例來自 Katya Ognyanova 的網路分析教學（kateto.net）：17 家媒體（報紙、電視、線上新聞）之間的引用與連結。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">nodes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">read.csv</span><span class="p">(</span><span class="s">"Dataset1-Media-Example-NODES.csv"</span><span class="p">,</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">as.is</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="n">links</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">read.csv</span><span class="p">(</span><span class="s">"Dataset1-Media-Example-EDGES.csv"</span><span class="p">,</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">as.is</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="nf">head</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##    id               media media.type type.label audience.size
+## 1 s01            NY Times          1  Newspaper            20
+## 2 s02     Washington Post          1  Newspaper            25
+## 3 s03 Wall Street Journal          1  Newspaper            30
+## 4 s04           USA Today          1  Newspaper            32
+## 5 s05            LA Times          1  Newspaper            20
+## 6 s06       New York Post          1  Newspaper            50</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">head</span><span class="p">(</span><span class="n">links</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##   from  to weight      type
+## 1  s01 s02     10 hyperlink
+## 2  s01 s02     12 hyperlink
+## 3  s01 s03     22 hyperlink
+## 4  s01 s04     21 hyperlink
+## 5  s04 s11     22   mention
+## 6  s05 s15     21   mention</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">nrow</span><span class="p">(</span><span class="n">nodes</span><span class="p">);</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="nf">unique</span><span class="p">(</span><span class="n">nodes</span><span class="o">$</span><span class="n">id</span><span class="p">))</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 17</code></pre>
+<pre class="out"><code>## [1] 17</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">nrow</span><span class="p">(</span><span class="n">links</span><span class="p">);</span><span class="w"> </span><span class="nf">nrow</span><span class="p">(</span><span class="nf">unique</span><span class="p">(</span><span class="n">links</span><span class="p">[,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"from"</span><span class="p">,</span><span class="w"> </span><span class="s">"to"</span><span class="p">)]))</span><span class="w">     </span><span class="c1"># 有重複的邊</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 52</code></pre>
+<pre class="out"><code>## [1] 49</code></pre>
+<p>邊有 52 條，但不重複的（起點, 終點）組合只有 49 組：有些媒體之間有多條邊。建立網路後用 <code>simplify()</code> 合併重複邊、移除自我迴圈：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">net</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_data_frame</span><span class="p">(</span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">links</span><span class="p">,</span><span class="w"> </span><span class="n">vertices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nodes</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="n">net</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">simplify</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">remove.multiple</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">remove.loops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span>
+<span class="w">                </span><span class="n">edge.attr.comb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"sum"</span><span class="p">,</span><span class="w"> </span><span class="s">"ignore"</span><span class="p">))</span><span class="w">   </span><span class="c1"># 重複邊的權重相加</span>
+
+<span class="n">colrs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"gray50"</span><span class="p">,</span><span class="w"> </span><span class="s">"tomato"</span><span class="p">,</span><span class="w"> </span><span class="s">"gold"</span><span class="p">)</span>
+<span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">color</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">colrs</span><span class="p">[</span><span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">media.type</span><span class="p">]</span><span class="w">           </span><span class="c1"># 顏色：媒體類型</span>
+<span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">size</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">audience.size</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">0.7</span><span class="w">         </span><span class="c1"># 大小：閱聽眾規模</span>
+<span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">label</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">media</span>
+<span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">label.color</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">"black"</span>
+<span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">label.cex</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0.7</span>
+<span class="nf">E</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">width</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">E</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">weight</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">12</span><span class="w">             </span><span class="c1"># 粗細：權重</span>
+<span class="nf">E</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">arrow.size</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0.2</span>
+<span class="nf">E</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">color</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">"gray70"</span>
+
+<span class="nf">set.seed</span><span class="p">(</span><span class="m">6</span><span class="p">)</span>
+<span class="nf">plot</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">edge.curved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span>
+<span class="nf">legend</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1.5</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1.1</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"報紙"</span><span class="p">,</span><span class="w"> </span><span class="s">"電視"</span><span class="p">,</span><span class="w"> </span><span class="s">"線上新聞"</span><span class="p">),</span><span class="w"> </span><span class="n">pch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">21</span><span class="p">,</span>
+<span class="w">       </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"#777777"</span><span class="p">,</span><span class="w"> </span><span class="n">pt.bg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colrs</span><span class="p">,</span><span class="w"> </span><span class="n">pt.cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"n"</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-21-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-21-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<h3 id="s13-8-1">中心性與整體結構</h3>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">nodes</span><span class="o">$</span><span class="n">degree_out</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">degree</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"out"</span><span class="p">)</span><span class="w">      </span><span class="c1"># 影響了多少媒體</span>
+<span class="n">nodes</span><span class="o">$</span><span class="n">degree_in</span><span class="w">   </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">degree</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"in"</span><span class="p">)</span><span class="w">       </span><span class="c1"># 被多少媒體引用</span>
+<span class="n">nodes</span><span class="o">$</span><span class="n">betweenness</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">betweenness</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">)</span>
+<span class="n">nodes</span><span class="o">$</span><span class="n">harmonic</span><span class="w">    </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">harmonic_centrality</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"out"</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">)</span>
+<span class="n">nodes</span><span class="o">$</span><span class="n">pagerank</span><span class="w">    </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">page_rank</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">E</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">weight</span><span class="p">)</span><span class="o">$</span><span class="n">vector</span>
+<span class="n">nodes</span><span class="o">$</span><span class="n">strength_out</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">strength</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"out"</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">E</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">weight</span><span class="p">)</span>
+
+<span class="n">nodes</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">select</span><span class="p">(</span><span class="n">media</span><span class="p">,</span><span class="w"> </span><span class="n">degree_in</span><span class="p">,</span><span class="w"> </span><span class="n">degree_out</span><span class="p">,</span><span class="w"> </span><span class="n">betweenness</span><span class="p">,</span><span class="w"> </span><span class="n">pagerank</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">arrange</span><span class="p">(</span><span class="nf">desc</span><span class="p">(</span><span class="n">pagerank</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">head</span><span class="p">(</span><span class="m">6</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>##                 media degree_in degree_out betweenness pagerank
+## 1 Wall Street Journal         6          7       127.0  0.14073
+## 2           USA Today         4          5        93.5  0.12330
+## 3            NY Times         4          4        24.0  0.10247
+## 4          Yahoo News         3          3        33.5  0.09675
+## 5         Google News         2          2        20.0  0.09415
+## 6                 BBC         3          0         0.0  0.06145</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">components_weak</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">components</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"weak"</span><span class="p">)</span>
+<span class="n">largest</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">which.max</span><span class="p">(</span><span class="n">components_weak</span><span class="o">$</span><span class="n">csize</span><span class="p">)</span>
+<span class="n">g_largest</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">induced_subgraph</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="nf">which</span><span class="p">(</span><span class="n">components_weak</span><span class="o">$</span><span class="n">membership</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">largest</span><span class="p">))</span>
+
+<span class="n">network_summary</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tibble</span><span class="p">(</span>
+<span class="w">  </span>指標<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s">"節點數"</span><span class="p">,</span><span class="w"> </span><span class="s">"邊數"</span><span class="p">,</span><span class="w"> </span><span class="s">"密度"</span><span class="p">,</span><span class="w"> </span><span class="s">"互惠性"</span><span class="p">,</span><span class="w"> </span><span class="s">"平均路徑長度"</span><span class="p">,</span><span class="w"> </span><span class="s">"全局群聚係數"</span><span class="p">),</span>
+<span class="w">  </span>數值<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="nf">vcount</span><span class="p">(</span><span class="n">net</span><span class="p">),</span><span class="w"> </span><span class="nf">ecount</span><span class="p">(</span><span class="n">net</span><span class="p">),</span><span class="w"> </span><span class="nf">edge_density</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">loops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="nf">reciprocity</span><span class="p">(</span><span class="n">net</span><span class="p">),</span>
+<span class="w">           </span><span class="nf">mean_distance</span><span class="p">(</span><span class="n">g_largest</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">),</span><span class="w"> </span><span class="nf">transitivity</span><span class="p">(</span><span class="nf">as_undirected</span><span class="p">(</span><span class="n">net</span><span class="p">),</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"global"</span><span class="p">))</span>
+<span class="p">)</span>
+<span class="n">network_summary</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 6 × 2
+##   指標           數值
+##   &lt;chr&gt;         &lt;dbl&gt;
+## 1 節點數       17    
+## 2 邊數         48    
+## 3 密度          0.176
+## 4 互惠性        0.417
+## 5 平均路徑長度  2.74 
+## 6 全局群聚係數  0.373</code></pre>
+<ul>
+<li>平均路徑長度同樣設 <code>weights = NA</code>，以「幾步」計算；否則會把權重（連結強度）當成距離加總，得到不合理的大數字。</li>
+<li><strong>互惠性</strong>（reciprocity）：有向邊中「雙向」的比例——A 連 B 時，B 也連回 A 的比例。</li>
+<li>網路如果不連通（有些節點彼此到不了），平均路徑長度只在<strong>最大的弱連通分量</strong>中計算：<code>components(mode = &quot;weak&quot;)</code> 找連通分量、<code>induced_subgraph()</code> 取出子網路。</li>
+</ul>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">ceb</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">suppressWarnings</span><span class="p">(</span><span class="nf">cluster_edge_betweenness</span><span class="p">(</span><span class="nf">as_undirected</span><span class="p">(</span><span class="n">net</span><span class="p">),</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">))</span>
+<span class="nf">modularity</span><span class="p">(</span><span class="n">ceb</span><span class="p">)</span>
+</code></pre></div>
+<pre class="out"><code>## [1] 0.3154</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">set.seed</span><span class="p">(</span><span class="m">6</span><span class="p">)</span>
+<span class="nf">plot</span><span class="p">(</span><span class="n">ceb</span><span class="p">,</span><span class="w"> </span><span class="nf">as_undirected</span><span class="p">(</span><span class="n">net</span><span class="p">),</span><span class="w"> </span><span class="n">vertex.label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">net</span><span class="p">)</span><span class="o">$</span><span class="n">media</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.label.cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.6</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-24-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-24-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure></section><section class="sec" id="s13-9" data-label="13.9 延伸：詞彙共現網路"><h2><span class="num">13.9</span>延伸：詞彙共現網路</h2><p>把第 12 章的文字探勘和網路分析結合：若兩個詞出現在<strong>同一份文件</strong>中，就在它們之間連一條邊，出現在越多份共同文件中、權重越大。這叫<strong>詞彙共現網路</strong>（term co-occurrence network），可以看出哪些詞屬於同一個主題。</p>
+<p>做法：把詞–文件矩陣變成 0／1（有沒有出現），再乘上自己的轉置，就得到「詞 × 詞」的共現次數矩陣：</p>
+\[\underbrace{M}_{\text{詞}\times\text{詞}} = \underbrace{T}_{\text{詞}\times\text{文件}}\ \underbrace{T^\top}_{\text{文件}\times\text{詞}}\]
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">reviews</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">read.csv</span><span class="p">(</span><span class="s">"../ch12/Womens Clothing E-Commerce Reviews.csv"</span><span class="p">)</span><span class="o">$</span><span class="n">Review.Text</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">500</span><span class="p">]</span>
+<span class="n">docs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tibble</span><span class="p">(</span><span class="n">doc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">500</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reviews</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="n">tidytext</span><span class="o">::</span><span class="nf">unnest_tokens</span><span class="p">(</span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">anti_join</span><span class="p">(</span><span class="n">tidytext</span><span class="o">::</span><span class="n">stop_words</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">distinct</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">)</span><span class="w">                                       </span><span class="c1"># 每份文件每個詞只算一次</span>
+
+<span class="n">top_terms</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">docs</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">sort</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">head</span><span class="p">(</span><span class="m">25</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">pull</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+
+<span class="n">termDocMatrix</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">docs</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">filter</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">top_terms</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">mutate</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">pivot_wider</span><span class="p">(</span><span class="n">names_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">doc</span><span class="p">,</span><span class="w"> </span><span class="n">values_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">values_fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">column_to_rownames</span><span class="p">(</span><span class="s">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">as.matrix</span><span class="p">()</span><span class="w">                                               </span><span class="c1"># 25 個詞 × 文件 的 0/1 矩陣</span>
+
+<span class="n">termMatrix</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">termDocMatrix</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="nf">t</span><span class="p">(</span><span class="n">termDocMatrix</span><span class="p">)</span><span class="w">            </span><span class="c1"># 詞 × 詞 共現次數</span>
+<span class="n">termMatrix</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">]</span>
+</code></pre></div>
+<pre class="out"><code>##             comfortable love dress pretty petite
+## comfortable          57   21    10      4      7
+## love                 21  158    29     14     17
+## dress                10   29    97     12     12
+## pretty                4   14    12     61      6
+## petite                7   17    12      6     48</code></pre>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">gw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_adjacency_matrix</span><span class="p">(</span><span class="n">termMatrix</span><span class="p">,</span><span class="w"> </span><span class="n">weighted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"undirected"</span><span class="p">)</span>
+<span class="n">gw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">simplify</span><span class="p">(</span><span class="n">gw</span><span class="p">)</span><span class="w">                                          </span><span class="c1"># 移除自己連自己（對角線）</span>
+<span class="n">gw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">delete_edges</span><span class="p">(</span><span class="n">gw</span><span class="p">,</span><span class="w"> </span><span class="nf">E</span><span class="p">(</span><span class="n">gw</span><span class="p">)[</span><span class="n">weight</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">25</span><span class="p">])</span><span class="w">                  </span><span class="c1"># 只留共同出現 25 次以上的</span>
+<span class="nf">V</span><span class="p">(</span><span class="n">gw</span><span class="p">)</span><span class="o">$</span><span class="n">size</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">degree</span><span class="p">(</span><span class="n">gw</span><span class="p">)</span>
+<span class="nf">set.seed</span><span class="p">(</span><span class="m">7</span><span class="p">)</span>
+<span class="nf">plot</span><span class="p">(</span><span class="n">gw</span><span class="p">,</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">layout_with_fr</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"gold"</span><span class="p">,</span><span class="w"> </span><span class="n">vertex.label.color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"black"</span><span class="p">,</span>
+<span class="w">     </span><span class="n">vertex.label.cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">,</span><span class="w"> </span><span class="n">edge.width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">E</span><span class="p">(</span><span class="n">gw</span><span class="p">)</span><span class="o">$</span><span class="n">weight</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="n">edge.color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"gray60"</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch13-unnamed-chunk-25-1.png" target="_blank"><img src="assets/fig/ch13-unnamed-chunk-25-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<ul>
+<li>對角線是每個詞自己出現的文件數，<code>simplify()</code> 會把這種「自我迴圈」去掉。</li>
+<li>共現次數低的邊太多會讓圖變成一團毛球，<code>delete_edges()</code> 只保留強關係。</li>
+<li>圖中聚在一起的詞（例如 size／fit／small、color／fabric）就是評論中常一起被討論的主題。</li>
+</ul></section><section class="sec" id="s13-10" data-label="13.10 小結"><h2><span class="num">13.10</span>小結</h2><table>
+<thead>
+<tr>
+<th>問題</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>怎麼存網路</td>
+<td>相鄰矩陣（<code>as.network</code>、<code>graph_from_adjacency_matrix</code>）、邊列表（<code>graph_from_data_frame</code>）</td>
+</tr>
+<tr>
+<td>整體結構</td>
+<td>密度 <code>gden</code>／<code>edge_density</code>、群聚係數 <code>gtrans</code>／<code>transitivity</code>、平均路徑長度 <code>mean_distance</code>、互惠性 <code>reciprocity</code></td>
+</tr>
+<tr>
+<td>誰重要</td>
+<td><code>degree</code>、<code>strength</code>、<code>closeness</code>、<code>betweenness</code>、<code>page_rank</code></td>
+</tr>
+<tr>
+<td>有哪些小圈圈</td>
+<td><code>cluster_edge_betweenness</code>、<code>cluster_louvain</code>，用 <code>modularity</code> 評估</td>
+</tr>
+<tr>
+<td>畫圖</td>
+<td><code>gplot</code>、<code>plot.network</code>（statnet）；<code>plot</code>＋<code>V()$size</code>、<code>V()$color</code>、<code>layout_*</code>（igraph）</td>
+</tr>
+</tbody>
+</table>
+<p>網路分析的價值在於把結果轉成業務洞察：找出意見領袖（高度數、高強度）、橋梁人物（高中介性）、可疑集團（緊密的社群）與資訊流動的路徑（最短路徑）。</p><section class="cc" id="cc-s13-10"><h3 class="cc-h">Concept Check：13.10 小結</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s13-10-1" data-label="13.10 小結 Q1"><div class="q-meta"><h4><a href="#q-s13-10-1">Q1</a></h4><span class="q-kind">寫程式｜中</span><span class="q-title">前 5 位關鍵人物</span></div><div class="q-text"><p>Given a data frame <code>chat</code> with columns <code>sender</code> and <code>receiver</code> (one row per message), write igraph code that builds a weighted directed network and lists the top 5 users by total strength.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>chat 資料每列是一則訊息（寄件者、收件者）。建立加權有向網路，列出強度最高的 5 位使用者。</p></div><div class="ans"><strong>答案</strong><div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">edges</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">chat</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">group_by</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span><span class="w"> </span><span class="n">receiver</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">summarise</span><span class="p">(</span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">n</span><span class="p">(),</span><span class="w"> </span><span class="n">.groups</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"drop"</span><span class="p">)</span>
+
+<span class="n">g</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">graph_from_data_frame</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span><span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span>
+<span class="nf">sort</span><span class="p">(</span><span class="nf">strength</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"all"</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">E</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">$</span><span class="n">weight</span><span class="p">),</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">]</span>
+</code></pre></div></div><div class="why"><p class="sh">解析</p><p>老師網站的課後練習 4：重複的互動先聚合成權重，再用 strength() 加總每個節點的權重。強度高代表互動頻繁，可能是意見領袖或客服的重點對象。</p></div></div></article></section></section>
+<nav class="pager"><a class="prev" href="ch12.html">← 第 12 章</a><a class="next" href="ch14.html">第 14 章 →</a></nav></main>
+<script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
+<script src="assets/search.js?v=e581631e"></script>
+<script src="assets/site.js?v=ba35a458"></script>
+</body></html>

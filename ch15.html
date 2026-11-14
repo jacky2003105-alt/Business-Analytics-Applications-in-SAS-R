@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 15 章 資料分析總覽｜商業分析：R課程筆記</title>
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css?v=113869c6">
+</head><body data-page="ch15" data-mode="course">
+<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
+<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course" class=on>課程</a><a href="hw01.html" data-mode="hw">作業</a></nav><label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html">第 8 章　訓練集、測試集與重抽樣</option><option value="ch09.html">第 9 章　非監督式學習：分群</option><option value="ch10.html">第 10 章　監督式學習：分類</option><option value="ch11.html">第 11 章　維度縮減：PCA 與 SPCA</option><option value="ch12.html">第 12 章　中文文字探勘</option><option value="ch13.html">第 13 章　社群網路分析</option><option value="ch14.html">第 14 章　A/B 測試</option><option value="ch15.html" selected>第 15 章　資料分析總覽</option></select></div></div>
+<main class="wrap"><header class="ch-head"><h1>第 15 章　資料分析總覽</h1><details class="ch-toc"><summary>本章目錄（4 節）</summary><ol><li><a href="#s15-1"><span>15.1</span>資料分析的五個步驟</a></li><li><a href="#s15-2"><span>15.2</span>常見陷阱</a></li><li><a href="#s15-3"><span>15.3</span>把整學期串起來</a></li><li><a href="#s15-4"><span>15.4</span>課後練習</a></li></ol></details></header>
+<div class="ch-intro"><p>最後一章不教新的函數，而是把前面十四章串起來。R 語法、資料整理、視覺化、迴歸、機器學習、文字探勘、網路分析、A/B 測試都是<strong>工具</strong>；真正的資料分析是：針對一個問題，用適當的方法處理資料、挖掘價值、找出有用的資訊，最後下結論——也就是老師說的 <strong>Data-Driven Storytelling</strong>（用數據說故事）。</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
+</code></pre></div></div><section class="sec" id="s15-1" data-label="15.1 資料分析的五個步驟"><h2><span class="num">15.1</span>資料分析的五個步驟</h2><p>老師講義的流程（Data Analysis Process）：</p>
+<ol>
+<li><strong>定義問題</strong>（Ask the right questions）</li>
+<li><strong>蒐集資料</strong>（Collecting the data）</li>
+<li><strong>清理資料</strong>（Cleaning the data）</li>
+<li><strong>分析資料</strong>（Analyzing the data）</li>
+<li><strong>解釋與分享結果</strong>（Interpreting and sharing your results）</li>
+</ol>
+<p>這不是一條直線。老師特別提醒 <strong>Embrace your failures</strong>：清理資料時可能發現全新的問題、探索時可能看到從沒想過的資料點、結果可能因為資料錯誤或早期的人為疏失而有誤導——這時就要<strong>回到前面的步驟</strong>，這很正常。</p>
+<h3 id="s15-1-1">Step 1：定義問題</h3>
+<ul>
+<li>先了解<strong>目的</strong>：為什麼需要這個分析？</li>
+<li>針對問題<strong>層層拆解</strong>，最後轉成<strong>可量化的指標</strong>。</li>
+<li>這一步最需要的是<strong>背景知識與橫向思考</strong>，而不是統計技巧。</li>
+</ul>
+<p>老師的例子：問題是「<strong>客戶流失</strong>」，用 <strong>5W1H</strong> 拆解：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>問題</th>
+<th>可量化的指標（例）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Why</td>
+<td>客戶為什麼流失？</td>
+<td>流失前的客訴次數、使用頻率變化</td>
+</tr>
+<tr>
+<td>Who</td>
+<td>流失的是哪些客戶？</td>
+<td>年齡、會員等級、加入時間</td>
+</tr>
+<tr>
+<td>Where</td>
+<td>哪個通路、哪家分店的客戶？</td>
+<td>各分店流失率</td>
+</tr>
+<tr>
+<td>When</td>
+<td>從什麼時候開始？</td>
+<td>每月流失率的時間序列</td>
+</tr>
+<tr>
+<td>What</td>
+<td>哪些因子造成？</td>
+<td>價格調整、競爭者促銷、服務變更</td>
+</tr>
+<tr>
+<td>How</td>
+<td>在不虧損的情況下，如何讓客戶回來？</td>
+<td>挽回方案的成本與回流率</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s15-1-2">Step 2：蒐集資料</h3>
+<p>決定<strong>需要哪些資料</strong>才能回答問題：</p>
+<ul>
+<li><strong>結構化</strong>（表格：交易、會員資料）或<strong>非結構化</strong>（文字、影像、語音）——第 12 章把文字變成結構化資料。</li>
+<li><strong>內部</strong>（公司自己的資料庫）或<strong>外部</strong>（政府開放資料、市調、社群媒體）來源。</li>
+<li><strong>第一方</strong>（自己蒐集的顧客資料）、<strong>第二方</strong>（合作夥伴直接分享的第一方資料）、<strong>第三方</strong>（向資料商購買的彙整資料）。</li>
+</ul>
+<h3 id="s15-1-3">Step 3：清理資料</h3>
+<ul>
+<li>資料<strong>越多越好嗎？</strong> 不一定——錯誤與雜訊越多，結果越差。</li>
+<li>移除<strong>重大錯誤、重複值、離群值、不需要的資料點</strong>；把資料整理成可分析的結構（第 1～2 章：型態轉換、缺失值、<code>pivot_longer</code>／<code>pivot_wider</code>、合併）。</li>
+<li>老師的評語：<strong>extremely important!!!</strong> 實務上這一步通常花掉最多時間。</li>
+</ul>
+<h3 id="s15-1-4">Step 4：分析資料</h3>
+<p>先<strong>認識資料</strong>（有哪些變數、結構、類型），再依要回答的問題選分析層次：</p>
+<table>
+<thead>
+<tr>
+<th>分析</th>
+<th>回答的問題</th>
+<th>方法</th>
+<th>本課章節</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>描述分析</strong> descriptive</td>
+<td>發生了什麼（what）？</td>
+<td>統計摘要、EDA、視覺化</td>
+<td>第 4～5 章</td>
+</tr>
+<tr>
+<td><strong>診斷分析</strong> diagnostic</td>
+<td>為什麼會這樣（why）？</td>
+<td>假設檢定、相關與因果、迴歸</td>
+<td>第 6、7、14 章</td>
+</tr>
+<tr>
+<td><strong>預測分析</strong> predictive</td>
+<td>未來會怎樣（what will）？</td>
+<td>分類（決策樹、隨機森林、邏輯斯迴歸、SVM、k-NN）、分群（K-means、階層式）、離群偵測、時間序列</td>
+<td>第 8～13 章</td>
+</tr>
+<tr>
+<td><strong>處方分析</strong> prescriptive</td>
+<td>該怎麼做（how）？</td>
+<td>用預測模型建議最佳行動：極小化成本、極大化收益</td>
+<td>綜合應用</td>
+</tr>
+</tbody>
+</table>
+<div class="box key"><span class="tag">重點</span><strong class="bt">相關不等於因果</strong><p>觀察資料中「用優惠券的顧客買得比較多」，不代表優惠券<strong>造成</strong>他們買更多（可能本來就愛買的人才會去拿優惠券）。迴歸可以控制看得到的變數，但要建立因果，最可靠的方法是<strong>隨機實驗</strong>——也就是第 14 章的 A/B 測試。</p></div>
+<h3 id="s15-1-5">Step 5：結論與建議</h3>
+<ul>
+<li>以「<strong>科學客觀</strong>」的方式提供合理的結果。</li>
+<li>結合<strong>統計分析知識</strong>與<strong>專業背景知識</strong>，讓數據說話。</li>
+<li><strong>數據驅動策略</strong>：幫助營運優化、判斷，做出更有效果、更有依據的決策——<strong>創造價值</strong>。</li>
+</ul><section class="cc" id="cc-s15-1"><h3 class="cc-h">Concept Check：15.1 資料分析的五個步驟</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s15-1-1" data-label="15.1 資料分析的五個步驟 Q1"><div class="q-meta"><h4><a href="#q-s15-1-1">Q1</a></h4><span class="q-kind">選擇｜易</span><span class="q-title">分析的層次</span></div><div class="q-text"><p>A retailer builds a model to forecast next month's demand for each store. Which type of analytics is this?</p></div><ol class="opts"><li><b>(A)</b><span>Descriptive analytics</span></li><li><b>(B)</b><span>Diagnostic analytics</span></li><li><b>(C)</b><span>Predictive analytics</span></li><li><b>(D)</b><span>Prescriptive analytics</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>零售商建立模型預測各分店下個月的需求，屬於哪一種分析？</p></div><div class="ans"><strong>答案 (C)</strong><p>Predictive analytics</p></div><div class="why"><p class="sh">解析</p><p>預測未來會怎樣是預測分析。若進一步根據預測結果決定每家店該進多少貨以極小化成本，才是處方分析。</p></div></div></article><article class="q" id="q-s15-1-2" data-label="15.1 資料分析的五個步驟 Q2"><div class="q-meta"><h4><a href="#q-s15-1-2">Q2</a></h4><span class="q-kind">簡答｜中</span><span class="q-title">5W1H</span></div><div class="q-text"><p>Using 5W1H, break down the business problem "our credit card customers are using their cards less" into analysis questions that can be measured with data.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>用 5W1H 把「信用卡客戶刷卡越來越少」拆成可以用資料衡量的分析問題。</p></div><div class="ans"><strong>答案</strong><p>Why: what changed before usage dropped (fee changes, reward cuts, competitor offers, complaints)? Who: which segments are affected (age, card type, tenure, income level)? Where: which spending categories or channels dropped (online vs in-store, merchant categories)? When: since which month, and is it seasonal? What: which factors are associated with the drop (regression or a decision tree on usage change)? How: which retention actions (targeted rewards, fee waivers) recover usage at an acceptable cost, ideally tested with an A/B test. Each question maps to a metric, e.g. monthly spending per card, active-card rate, share of customers whose spending fell by more than 30%.</p></div><div class="why"><p class="sh">解析</p><p>老師網站課後練習 1 的形式：重點是把模糊的問題轉成可以量化、可以用資料回答的子問題。</p></div></div></article></section></section><section class="sec" id="s15-2" data-label="15.2 常見陷阱"><h2><span class="num">15.2</span>常見陷阱</h2><ul>
+<li><strong>資料錯誤或前段流程的疏失</strong>會讓結果誤導——所以清理與檢查很重要。</li>
+<li><strong>有資料不代表能得到正確結論</strong>：統計學家 John Tukey 說，一堆資料加上一個迫切想要答案的心，並不保證能從中得到合理的答案。不要過度自信。</li>
+<li><strong>建模前先看資料</strong>：Colin Mallows 說，最穩健的統計技巧就是<strong>看資料</strong>——先畫圖、先探索。</li>
+</ul>
+<p>最後一點可以用一個經典的例子親眼看到——Anscombe 的四組資料（R 內建 <code>anscombe</code>）：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">anscombe_long</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tibble</span><span class="p">(</span>
+<span class="w">  </span><span class="n">set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s">"I"</span><span class="p">,</span><span class="w"> </span><span class="s">"II"</span><span class="p">,</span><span class="w"> </span><span class="s">"III"</span><span class="p">,</span><span class="w"> </span><span class="s">"IV"</span><span class="p">),</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">11</span><span class="p">),</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">anscombe</span><span class="o">$</span><span class="n">x1</span><span class="p">,</span><span class="w"> </span><span class="n">anscombe</span><span class="o">$</span><span class="n">x2</span><span class="p">,</span><span class="w"> </span><span class="n">anscombe</span><span class="o">$</span><span class="n">x3</span><span class="p">,</span><span class="w"> </span><span class="n">anscombe</span><span class="o">$</span><span class="n">x4</span><span class="p">),</span>
+<span class="w">  </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">anscombe</span><span class="o">$</span><span class="n">y1</span><span class="p">,</span><span class="w"> </span><span class="n">anscombe</span><span class="o">$</span><span class="n">y2</span><span class="p">,</span><span class="w"> </span><span class="n">anscombe</span><span class="o">$</span><span class="n">y3</span><span class="p">,</span><span class="w"> </span><span class="n">anscombe</span><span class="o">$</span><span class="n">y4</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">anscombe_long</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">group_by</span><span class="p">(</span><span class="n">set</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
+<span class="w">  </span><span class="nf">summarise</span><span class="p">(</span><span class="n">mean_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">mean</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">mean_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">mean</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="n">sd_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sd</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+<span class="w">            </span><span class="n">cor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">cor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">coef</span><span class="p">(</span><span class="nf">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="p">))[</span><span class="m">2</span><span class="p">])</span>
+</code></pre></div>
+<pre class="out"><code>## # A tibble: 4 × 6
+##   set   mean_x mean_y  sd_y   cor slope
+##   &lt;chr&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 I          9   7.50  2.03 0.816 0.500
+## 2 II         9   7.50  2.03 0.816 0.5  
+## 3 III        9   7.5   2.03 0.816 0.500
+## 4 IV         9   7.50  2.03 0.817 0.500</code></pre>
+<p>四組資料的平均數、標準差、相關係數、迴歸斜率<strong>幾乎一模一樣</strong>。只看數字，會以為它們是同一種關係。但畫出來：</p>
+<div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">ggplot</span><span class="p">(</span><span class="n">anscombe_long</span><span class="p">,</span><span class="w"> </span><span class="nf">aes</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">))</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="nf">geom_point</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="nf">geom_smooth</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"lm"</span><span class="p">,</span><span class="w"> </span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">formula</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="nf">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="w"> </span><span class="n">set</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="nf">theme_bw</span><span class="p">()</span><span class="w"> </span><span class="o">+</span>
+<span class="w">  </span><span class="nf">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Anscombe's quartet：統計量相同，資料完全不同"</span><span class="p">)</span>
+</code></pre></div>
+<figure class="rfig"><a href="assets/fig/ch15-unnamed-chunk-3-1.png" target="_blank"><img src="assets/fig/ch15-unnamed-chunk-3-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
+<p>第 I 組是真的線性關係；第 II 組是曲線；第 III 組被一個離群值拉歪；第 IV 組的斜率完全由一個點決定。<strong>先畫圖，再建模</strong>。</p><section class="cc" id="cc-s15-2"><h3 class="cc-h">Concept Check：15.2 常見陷阱</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s15-2-1" data-label="15.2 常見陷阱 Q1"><div class="q-meta"><h4><a href="#q-s15-2-1">Q1</a></h4><span class="q-kind">選擇｜易</span><span class="q-title">先看資料</span></div><div class="q-text"><p>Four data sets have the same means, variances, correlation and regression line, but their scatter plots look completely different. What is the main lesson?</p></div><ol class="opts"><li><b>(A)</b><span>Summary statistics are always sufficient to describe data</span></li><li><b>(B)</b><span>Correlation implies causation</span></li><li><b>(C)</b><span>Always visualize the data before fitting a model</span></li><li><b>(D)</b><span>Linear regression should never be used</span></li></ol><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>四組資料的平均、變異數、相關與迴歸線都相同，散佈圖卻完全不同。主要的教訓是什麼？</p></div><div class="ans"><strong>答案 (C)</strong><p>Always visualize the data before fitting a model</p></div><div class="why"><p class="sh">解析</p><p>Anscombe's quartet：摘要統計量會隱藏曲線關係、離群值與高槓桿點，建模前一定要先畫圖。</p></div></div></article></section></section><section class="sec" id="s15-3" data-label="15.3 把整學期串起來"><h2><span class="num">15.3</span>把整學期串起來</h2><table>
+<thead>
+<tr>
+<th>分析流程</th>
+<th>用到的章節與工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>蒐集、清理、整理</td>
+<td>第 1 章（讀檔、型態、缺失值、日期）、第 2 章（dplyr、tidyr、合併）、第 3 章（自訂函數、迴圈）</td>
+</tr>
+<tr>
+<td>描述</td>
+<td>第 4 章（機率分配、模擬）、第 5 章（ggplot2、EDA）</td>
+</tr>
+<tr>
+<td>診斷</td>
+<td>第 6 章（迴歸、診斷、共線性）、第 7 章（邏輯斯迴歸、GLM）、第 14 章（A/B 測試、ANOVA）</td>
+</tr>
+<tr>
+<td>預測</td>
+<td>第 8 章（訓練／測試、交叉驗證）、第 9 章（分群）、第 10 章（決策樹、隨機森林）、第 11 章（PCA）</td>
+</tr>
+<tr>
+<td>非結構化資料</td>
+<td>第 12 章（文字探勘）、第 13 章（社群網路）</td>
+</tr>
+<tr>
+<td>行動與溝通</td>
+<td>每一章最後的「解讀與建議」、作業中的可貼上段落</td>
+</tr>
+</tbody>
+</table>
+<p>技術會不斷更新（新的套件、新的模型、AI 工具），但這套框架與態度不會變：<strong>定義問題、蒐集、清理、分析、溝通</strong>；<strong>先看資料、留意因果、用數據說故事</strong>。老師講義最後引用的兩句話：</p>
+<ul>
+<li>藏在成堆資料中的知識，可能改變一位病人的人生，甚至改變世界。（Atul Butte）</li>
+<li>More is different.（Philip W. Anderson）</li>
+</ul></section><section class="sec" id="s15-4" data-label="15.4 課後練習"><h2><span class="num">15.4</span>課後練習</h2><p>老師網站提供的練習（沒有標準答案，用來規劃自己的分析專案）：</p>
+<ol>
+<li>選一個你關心的商業或社會問題，用 5W1H 拆解成可量化的分析問題。</li>
+<li>規劃需要蒐集的資料（結構化或非結構化、內部或外部），並列出可能的資料品質問題。</li>
+<li>說明可以用描述、診斷、預測、處方中的哪些分析，並對應本課程的章節技術。</li>
+<li>找一則把相關誤當因果的報導或圖表，指出其推論問題，並說明如何透過實驗或更嚴謹的分析改進。</li>
+</ol><section class="cc" id="cc-s15-4"><h3 class="cc-h">Concept Check：15.4 課後練習</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s15-4-1" data-label="15.4 課後練習 Q1"><div class="q-meta"><h4><a href="#q-s15-4-1">Q1</a></h4><span class="q-kind">簡答｜中</span><span class="q-title">相關誤當因果</span></div><div class="q-text"><p>A news article reports: "Customers who use the mobile app spend 40% more than those who do not, so the bank should force all customers to use the app." Explain the flaw in this reasoning and how you would test the claim properly.</p></div><button class="toggle" type="button" aria-expanded="true">隱藏解答</button><div class="sol"><div class="zh"><p class="sh">中文題意</p><p>報導說：「使用 App 的客戶消費多 40%，所以銀行應該強制所有客戶使用 App。」指出推論問題，並說明如何正確檢驗。</p></div><div class="ans"><strong>答案</strong><p>The comparison is observational: customers choose whether to use the app, and heavy spenders (younger, higher income, more engaged) are more likely to adopt it. The 40% gap may come from these differences (self-selection / confounding), not from the app itself, so forcing everyone to use it may not raise spending. A proper test is a randomized experiment (A/B test): randomly invite or incentivize half of the non-users to adopt the app, compare later spending of the two groups with a t-test, and check the result by segment (interaction). If an experiment is impossible, at least use regression to control for age, income, tenure and past spending, and compare spending before and after adoption.</p></div><div class="why"><p class="sh">解析</p><p>相關不等於因果；自我選擇造成的差異要靠隨機分組排除（第 14 章）。</p></div></div></article></section></section>
+<nav class="pager"><a class="prev" href="ch14.html">← 第 14 章</a><span></span></nav></main>
+<script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
+<script src="assets/search.js?v=e581631e"></script>
+<script src="assets/site.js?v=ba35a458"></script>
+</body></html>

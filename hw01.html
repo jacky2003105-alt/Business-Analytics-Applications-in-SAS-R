@@ -454,6 +454,6 @@
 <div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>依題目將會員年齡分為「未滿 30 歲」、「30–44 歲」與「45 歲以上」三組。找不到會員資料的 3 筆訂單沒有年齡，無法分組，因此先用 filter(!is.na(Age)) 排除，剩下 147 筆訂單，再以 mutate() 搭配巢狀 ifelse() 建立 age_group，並用 factor() 將三組依年齡由小到大排序。三組各有 10 位會員，訂單數分別為 47、51、49 筆。以 group_by() 與 summarise() 計算平均每筆實付金額，未滿 30 歲為 216 元、30–44 歲為 230 元、45 歲以上為 256 元，呈現隨年齡增加而上升的趨勢。以 count() 統計各通路次數，未滿 30 歲與 45 歲以上最常使用 Store，30–44 歲則最常使用 App，但只比 Store 多 1 筆，差距很小。接著依產品與年齡層加總實付金額，以 geom_col() 搭配 position = "dodge" 繪製並排長條圖。從圖中可見，未滿 30 歲的消費集中在 Latte 與 Americano 等咖啡類；30–44 歲以 Latte 與 Cappuccino 最高，其中 Cappuccino 的實付金額明顯多於其他年齡層；45 歲以上則以單價最高（150 元）的 Cheesecake 實付金額最高，其次為 ColdBrew 與 Latte，這也是 45 歲以上平均每筆消費最高的原因之一。Latte 在三個年齡層都超過 2,000 元，是全店的主力商品；Croissant 在各年齡層都最低。</p></div></div></section>
 <nav class="pager"><span></span><a class="next" href="hw02.html">作業 2 →</a></nav></main>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=496b2db6"></script>
+<script src="assets/search.js?v=e581631e"></script>
 <script src="assets/site.js?v=ba35a458"></script>
 </body></html>

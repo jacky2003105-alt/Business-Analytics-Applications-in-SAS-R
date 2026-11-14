@@ -215,6 +215,6 @@
 <div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>要有至少 90% 的機率集滿 6 款，相當於找出一個購買次數 k，使得「在 k 次以內集滿」的機率至少為 0.9，所需預算即為 k × 65 元。我利用 (c) 模擬的 2000 位顧客購買次數，以 quantile() 計算第 90 百分位數，結果為 23 次，代表約 90% 的顧客在這個次數以內就能集滿。由於購買次數必須是整數，我再用 while 迴圈從 0 次開始逐次增加，找出「在 k 次以內集滿的比例」第一次達到 0.9 的最小次數，得到 23 次。在模擬中，購買 23 次以內集滿的比例為 0.915，已達 90%；若只買 22 次，比例只有 0.898，未達 90%。因此一位顧客大約需要購買 23 次，準備 23 × 65 = 1495 元的預算，才有至少 90% 的機率集滿 6 款。相較之下，若只依平均購買次數約 14.6 次準備約 949 元，在模擬中只有約 59% 的顧客能在 14 次內集滿。由於這是模擬得到的估計值，換一組亂數結果可能相差約一次購買（65 元），實際準備時可以保留一些餘裕。</p></div></div></section>
 <nav class="pager"><a class="prev" href="hw01.html">← 作業 1</a><a class="next" href="hw03.html">作業 3 →</a></nav></main>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=496b2db6"></script>
+<script src="assets/search.js?v=e581631e"></script>
 <script src="assets/site.js?v=ba35a458"></script>
 </body></html>
