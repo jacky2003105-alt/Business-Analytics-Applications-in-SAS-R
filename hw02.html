@@ -4,11 +4,11 @@
 <meta name="color-scheme" content="light dark">
 <script>try{var t=localStorage.getItem('notes:theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=6e5fdb29">
+<link rel="stylesheet" href="assets/style.css?v=ffd5af7f">
 
 </head><body data-page="hw02" data-mode="hw" data-course="ba" data-key="ba">
 <a class="skip" href="#main">跳到主要內容</a>
-<header class="topbar"><a class="brand" href="index.html" aria-label="商業分析：R｜課程筆記首頁"><span class="logo" aria-hidden="true">R</span><span>商業分析：R</span><span class="sub">｜課程筆記</span></a>
+<header class="topbar"><a class="brand" href="index.html" aria-label="商業分析：R｜課程筆記首頁"><span>商業分析：R</span><span class="sub">｜課程筆記</span></a>
 <div class="pickers"><nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇作業"><option value="hw01.html">作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html" selected>作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html">作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html">作業 4　財務指標的主成分分析</option></select></div></header>
 <main class="wrap" id="main"><nav class="crumbs" aria-label="目前位置"><a href="index.html">首頁</a><span class="sep">›</span><span>作業</span><span class="sep">›</span><span>作業 2</span></nav><header class="ch-head"><p class=eyebrow>作業 2</p><h1>廣告點擊與集點公仔模擬</h1><p class="ch-meta"><span>6 節</span><span>閱讀約 21 分鐘</span></p><details class="ch-toc"><summary>本頁目錄（6 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>廣告點擊模擬函數</a></li><li><a href="#s1-2"><span>1.2</span>不同曝光次數下的實際點擊率</a></li><li><a href="#s1-3"><span>1.3</span>重複 500 次：曝光次數與估計穩定性</a></li><li><a href="#s2-1"><span>2.1</span>集點公仔模擬函數</a></li><li><a href="#s2-2"><span>2.2</span>一位顧客的模擬結果</a></li><li><a href="#s2-4"><span>2.4</span>要有 90% 機率集滿的預算</a></li></ol></details></header>
 <div class="ch-intro"><p>作業 2 是兩個「用<span class="gl" tabindex="0" role="button" data-g="函數">函數</span> + <span class="gl" tabindex="0" role="button" data-g="迴圈">迴圈</span>做模擬」的題目：第一題模擬廣告點擊，觀察曝光次數越多、估計出來的點擊率越穩定；第二題模擬集點公仔，估計集滿需要買幾次、要準備多少預算。全部只用課堂教過的方法：</p>
