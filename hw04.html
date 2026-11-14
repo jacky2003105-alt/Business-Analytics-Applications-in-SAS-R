@@ -81,7 +81,7 @@
 <li>題目寫 163 間公司，但檔案實際是 162 列（<a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><code>dim()</code></a> 的結果），以實際資料為準。</li>
 <li>用 <a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read_csv()</code></a> 讀檔。資料裡有些數字有千分位逗號（例如 "1,708.73"），<a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read_csv()</code></a> 會自動把它們讀成數字；如果用 <a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read.csv()</code></a>，這幾欄會變成文字，要另外處理。</li>
 <li><code>comp_id</code> 是公司代號，數字大小沒有意義，所以用 <code>fin[, -1]</code> 拿掉第 1 欄，剩下 16 個財務指標。</li>
-<li>沒有缺失值（<code>sum(is.na())</code> 是 0）。</li>
+<li>沒有<span class="gl" tabindex="0" role="button" data-g="缺失值">缺失值</span>（<code>sum(is.na())</code> 是 0）。</li>
 <li><strong>單位差很多</strong>：流動比率大多在一兩百（%），最大到 3,783.42；營業利益成長率從 -449.33 到 1,708.73；ROE 大多在正負幾十之間。所以做 PCA 時一定要<span class="gl" tabindex="0" role="button" data-g="標準化">標準化</span>（<code>scale = TRUE</code>）。</li>
 <li><strong>有些指標高度相關</strong>：ROE、ROA、營業利益率彼此相關（都在衡量獲利），流動比率和速動比率的相關接近 0.98——資訊重複，適合用 PCA 濃縮。</li>
 </ul>
@@ -127,10 +127,10 @@
 <p>說明：</p>
 <ul>
 <li><code>prcomp(fin_x, center = TRUE, scale = TRUE)</code>：先把每個指標標準化（平均 0、<span class="gl" tabindex="0" role="button" data-g="標準差">標準差</span> 1），再做 PCA。16 個指標得到 16 個主成分。</li>
-<li><code>summary(pca)</code> 的 <code>Proportion of Variance</code> 是每個主成分解釋的比例，<code>Cumulative Proportion</code> 是累積比例。我也用 <code>sdev^2</code>（特徵值）自己算了一次，結果相同。</li>
+<li><code>summary(pca)</code> 的 <code>Proportion of Variance</code> 是每個主成分解釋的比例，<code>Cumulative Proportion</code> 是累積比例。我也用 <code>sdev^2</code>（<span class="gl" tabindex="0" role="button" data-g="特徵值">特徵值</span>）自己算了一次，結果相同。</li>
 <li><strong>PC1 解釋 25.83%、PC2 解釋 21.95%，前兩個主成分合計解釋 47.78%</strong> 的變異。</li>
 <li>只有不到一半，因為財務指標涵蓋獲利、週轉、成長、償債等很多不同面向，兩個主成分裝不下。依其他準則：<ul>
-<li><strong>Kaiser 準則</strong>：特徵值大於 1 的主成分有 5 個（陡坡圖中藍線以上）。</li>
+<li><strong>Kaiser 準則</strong>：特徵值大於 1 的主成分有 5 個（<span class="gl" tabindex="0" role="button" data-g="陡坡圖">陡坡圖</span>中藍線以上）。</li>
 <li><strong>累積 80%</strong>：需要 6 個主成分。</li>
 <li>陡坡圖在第 3 個主成分之後明顯變平，所以下一題解讀前三個主成分。</li>
 </ul>
@@ -283,6 +283,6 @@
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
 <script src="assets/search.js?v=f1f7e863"></script>
-<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>

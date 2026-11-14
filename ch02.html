@@ -15,7 +15,7 @@
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">   </span><span class="c1"># 一次載入 ggplot2、dplyr、tidyr、readr、purrr、tibble 等</span>
 </code></pre></div>
 <p>載入時 R 會列出載入了哪些套件，以及「Conflicts」——例如 dplyr 的 <code>filter()</code> 蓋過了 base R 的 <code>stats::filter()</code>。這是正常訊息，不是錯誤。</p></div><section class="sec" id="s2-1" data-label="2.1 管線運算子 %&gt;%"><h2><span class="num">2.1</span>管線運算子 %&gt;%</h2><h3 id="s2-1-1">為什麼需要管線</h3>
-<p>假設要「產生 100 個常態亂數 → 取絕對值 → 畫直方圖」。傳統寫法有兩種：</p>
+<p>假設要「產生 100 個常態亂數 → 取絕對值 → 畫<span class="gl" tabindex="0" role="button" data-g="直方圖">直方圖</span>」。傳統寫法有兩種：</p>
 <div class="code runnable"><button class="copy" type="button" aria-label="複製程式碼">複製</button><button class="run" type="button" aria-label="在網頁上執行這段程式">▶ 執行</button><span class="lang">R</span><pre><code><span class="c1"># 寫法一：每一步存一個中間物件</span>
 <span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rnorm</span><span class="p">(</span><span class="m">100</span><span class="p">)</span>
 <span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -378,7 +378,7 @@ b. Create a new variable <code>total_sales</code> by summing the values of two n
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">nrow</span><span class="p">(</span><span class="nf">na.omit</span><span class="p">(</span><span class="n">mydata</span><span class="p">))</span><span class="w">                              </span><span class="c1"># 只要有任何 NA 就刪：幾乎全部被刪光</span>
 </code></pre></div>
 <pre class="out"><code>## [1] 2392</code></pre>
-<p><code>na.omit()</code> 會刪掉「任何一欄」有 NA 的列，這份資料很多欄都有缺漏，幾乎刪光。所以通常只針對分析要用的欄位處理缺失值。</p>
+<p><code>na.omit()</code> 會刪掉「任何一欄」有 NA 的列，這份資料很多欄都有缺漏，幾乎刪光。所以通常只針對分析要用的欄位處理<span class="gl" tabindex="0" role="button" data-g="缺失值">缺失值</span>。</p>
 <h3 id="s2-3-2">找出並修正錯誤值</h3>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">which.max</span><span class="p">(</span><span class="n">mydata</span><span class="o">$</span><span class="n">price</span><span class="p">)</span>
 </code></pre></div>
@@ -873,6 +873,6 @@ b. Create a new variable <code>total_sales</code> by summing the values of two n
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
 <script src="assets/search.js?v=f1f7e863"></script>
-<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>

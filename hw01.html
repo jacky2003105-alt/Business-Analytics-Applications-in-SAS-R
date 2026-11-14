@@ -11,7 +11,7 @@
 <header class="topbar"><a class="brand" href="index.html" aria-label="商業分析：R｜課程筆記首頁"><span>商業分析：R</span><span class="sub">｜課程筆記</span></a>
 <div class="pickers"><nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇作業"><option value="hw01.html" selected>作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html">作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html">作業 4　財務指標的主成分分析</option></select></div></header>
 <main class="wrap" id="main"><nav class="crumbs" aria-label="目前位置"><a href="index.html">首頁</a><span class="sep">›</span><span>作業</span><span class="sep">›</span><span>作業 1</span></nav><header class="ch-head"><p class=eyebrow>作業 1</p><h1>空氣品質資料整理與咖啡店會員分析</h1><p class="ch-meta"><span>7 節</span><span>閱讀約 40 分鐘</span></p><details class="ch-toc"><summary>本頁目錄（7 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>空氣品質資料整理成 tidy 格式</a></li><li><a href="#s1-2"><span>1.2</span>各測站月平均、超標天數與折線圖</a></li><li><a href="#s2-1"><span>2.1</span>拆開 menu 的商品編號與名稱</a></li><li><a href="#s2-2"><span>2.2</span>OrderID 命名與三表合併</a></li><li><a href="#s2-3"><span>2.3</span>新增實付金額 spend</a></li><li><a href="#s2-4"><span>2.4</span>會員等級分組比較</a></li><li><a href="#s2-5"><span>2.5</span>年齡層的消費比較</a></li></ol></details></header>
-<div class="ch-intro"><p>作業 1 有兩大題：第 1 題把一份「日期擺在欄名」的空氣品質資料整理成整齊資料，再做月平均與折線圖；第 2 題把連鎖咖啡店的三張表合併，比較不同會員等級與年齡層的消費。全部只用課堂教過的方法完成：</p>
+<div class="ch-intro"><p>作業 1 有兩大題：第 1 題把一份「日期擺在欄名」的空氣品質資料整理成整齊資料，再做月平均與<span class="gl" tabindex="0" role="button" data-g="折線圖">折線圖</span>；第 2 題把連鎖咖啡店的三張表合併，比較不同會員等級與年齡層的消費。全部只用課堂教過的方法完成：</p>
 <ul>
 <li>讀檔與整理：<code>read_csv()</code>、<code>gather()</code>、<code>spread()</code>、<code>separate()</code>（<a href="ch02.html#s2-4">第 2 章 2.4</a>）</li>
 <li>資料操作：<code>filter()</code>、<code>select()</code>、<code>mutate()</code>、<code>rename()</code>、<code>arrange()</code>、<code>group_by()</code> + <code>summarise()</code>、<code>count()</code>、<code>tally()</code>（<a href="ch02.html#s2-2">第 2 章 2.2</a>）</li>
@@ -447,7 +447,7 @@
 <span class="w">       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Product"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Total Spend"</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Age Group"</span><span class="p">)</span>
 </code></pre></div>
 <figure class="rfig"><a href="assets/fig/hw01-unnamed-chunk-22-1.png" target="_blank"><img src="assets/fig/hw01-unnamed-chunk-22-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
-<p>做法：先用 <code>group_by(Item, age_group)</code> 加總每個產品在每個年齡層的實付金額，再用 <a class="fnref" href="ch05.html#s5-3-4" title="課程：第 5 章 5.3・折線圖、並排長條圖與圖例文字"><code>geom_col()</code></a> 畫長條圖。<code>fill = age_group</code> 依年齡層上色，<code>position = &quot;dodge&quot;</code> 讓三個年齡層的長條並排（預設是往上堆疊），方便直接比較高低。</p>
+<p>做法：先用 <code>group_by(Item, age_group)</code> 加總每個產品在每個年齡層的實付金額，再用 <a class="fnref" href="ch05.html#s5-3-4" title="課程：第 5 章 5.3・折線圖、並排長條圖與圖例文字"><code>geom_col()</code></a> 畫<span class="gl" tabindex="0" role="button" data-g="長條圖">長條圖</span>。<code>fill = age_group</code> 依年齡層上色，<code>position = &quot;dodge&quot;</code> 讓三個年齡層的長條並排（預設是往上堆疊），方便直接比較高低。</p>
 <p>從圖中可以看到：</p>
 <ul>
 <li><strong>未滿 30 歲</strong>的消費集中在 Latte 與 Americano 等咖啡類。</li>
@@ -460,6 +460,6 @@
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
 <script src="assets/search.js?v=f1f7e863"></script>
-<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>

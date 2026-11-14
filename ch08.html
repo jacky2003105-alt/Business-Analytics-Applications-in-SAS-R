@@ -11,7 +11,7 @@
 <header class="topbar"><a class="brand" href="index.html" aria-label="商業分析：R｜課程筆記首頁"><span>商業分析：R</span><span class="sub">｜課程筆記</span></a>
 <div class="pickers"><nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course" class=on>課程</a><a href="hw01.html" data-mode="hw">作業</a></nav><label for="unitSelect">選擇單元</label><select id="unitSelect" aria-label="選擇單元"><option value="index.html">首頁：課程介紹與使用說明</option><option value="exam.html">工具：測驗模式</option><option value="notes.html">工具：我的重點與筆記</option><option value="ch01.html">第 1 章　R 基礎與資料處理</option><option value="ch02.html">第 2 章　資料轉換與整理：tidyverse</option><option value="ch03.html">第 3 章　自訂函數與流程控制</option><option value="ch04.html">第 4 章　機率分配</option><option value="ch05.html">第 5 章　視覺化與探索式資料分析</option><option value="ch06.html">第 6 章　迴歸分析</option><option value="ch07.html">第 7 章　廣義線性模型 GLM</option><option value="ch08.html" selected>第 8 章　訓練集、測試集與重抽樣</option><option value="ch09.html">第 9 章　非監督式學習：分群</option><option value="ch10.html">第 10 章　監督式學習：分類</option><option value="ch11.html">第 11 章　維度縮減：PCA 與 SPCA</option><option value="ch12.html">第 12 章　中文文字探勘</option><option value="ch13.html">第 13 章　社群網路分析</option><option value="ch14.html">第 14 章　A/B 測試</option><option value="ch15.html">第 15 章　資料分析總覽</option></select></div></header>
 <main class="wrap" id="main"><nav class="crumbs" aria-label="目前位置"><a href="index.html">首頁</a><span class="sep">›</span><span>課程筆記</span><span class="sep">›</span><span>第 8 章</span></nav><header class="ch-head"><p class=eyebrow>第 8 章</p><h1>訓練集、測試集與重抽樣</h1><p class="ch-meta"><span>6 節</span><span>Concept Check 21 題</span><span>閱讀約 34 分鐘</span></p><details class="ch-toc"><summary>本章目錄（6 節）</summary><ol><li><a href="#s8-1"><span>8.1</span>為什麼不能用訓練資料評估：過度配適</a></li><li><a href="#s8-2"><span>8.2</span>訓練集與測試集</a></li><li><a href="#s8-3"><span>8.3</span>交叉驗證</a></li><li><a href="#s8-4"><span>8.4</span>自助抽樣 Bootstrap</a></li><li><a href="#s8-5"><span>8.5</span>預告：監督式與非監督式學習</a></li><li><a href="#s8-6"><span>8.6</span>本章小結</a></li></ol></details></header>
-<div class="ch-intro"><p>前兩章配適模型後，都用「同一份資料」計算 \(R^2\)、正確率。問題是：模型本來就是依這份資料調整出來的，用它來評分，等於拿考古題原題考自己，分數一定偏高。我們真正關心的是模型對<strong>沒看過的新資料</strong>表現如何。這一章學三種做法：切成<strong><span class="gl" tabindex="0" role="button" data-g="訓練集">訓練集</span>與<span class="gl" tabindex="0" role="button" data-g="測試集">測試集</span></strong>、<strong>交叉驗證</strong>、<strong>自助抽樣 bootstrap</strong>——它們的共同精神都是<strong>重抽樣</strong>（resampling）：用資料本身模擬出「新資料」。</p>
+<div class="ch-intro"><p>前兩章配適模型後，都用「同一份資料」計算 \(R^2\)、<span class="gl" tabindex="0" role="button" data-g="正確率">正確率</span>。問題是：模型本來就是依這份資料調整出來的，用它來評分，等於拿考古題原題考自己，分數一定偏高。我們真正關心的是模型對<strong>沒看過的新資料</strong>表現如何。這一章學三種做法：切成<strong><span class="gl" tabindex="0" role="button" data-g="訓練集">訓練集</span>與<span class="gl" tabindex="0" role="button" data-g="測試集">測試集</span></strong>、<strong>交叉驗證</strong>、<strong>自助抽樣 bootstrap</strong>——它們的共同精神都是<strong>重抽樣</strong>（resampling）：用資料本身模擬出「新資料」。</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">foreign</span><span class="p">)</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">                     </span><span class="c1"># cv.glm()、boot()</span>
@@ -38,7 +38,7 @@
 ## 2 degree 15    0.2102  19.8032</code></pre>
 <ul>
 <li><strong>MSE</strong>（mean squared error，均方誤差）= 預測誤差平方的平均，越小越好。</li>
-<li><code>poly(x, 15, raw = TRUE)</code> 一次產生 x 的 1～15 次方當預測變數。</li>
+<li><code>poly(x, 15, raw = TRUE)</code> 一次產生 x 的 1～15 次方當<span class="gl" tabindex="0" role="button" data-g="預測變數">預測變數</span>。</li>
 <li>15 次多項式的<strong>訓練</strong> MSE 比直線小（它能彎來彎去穿過更多點），但<strong>測試</strong> MSE 大得多。</li>
 </ul>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">grid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">seq</span><span class="p">(</span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">400</span><span class="p">))</span>
@@ -319,7 +319,7 @@
 <pre class="out"><code>##  2.5% 97.5% 
 ##    87    93</code></pre></div><div class="why"><p class="sh">解析</p><p>函數格式一定是 <code>function(data, index)</code>：先用 index 取出這次被抽到的資料，再算統計量。中位數的標準誤沒有簡單公式，正是 bootstrap 的典型用途。也可以用 <code>boot.ci(bm, type = &quot;perc&quot;)</code> 得到同樣的百分位區間。</p></div></div></article></section></section><section class="sec" id="s8-5" data-label="8.5 預告：監督式與非監督式學習"><h2><span class="num">8.5</span>預告：監督式與非監督式學習</h2><p>這一章的訓練集、測試集、交叉驗證，是<strong>機器學習</strong>的基本流程。老師在下一單元把機器學習分成四類：<strong>監督式</strong>、<strong>非監督式</strong>、半監督式、增強學習，課程只講前兩種。</p>
 <ul>
-<li><strong>監督式學習</strong>（supervised learning）：資料有「答案」（標籤、反應變數 Y），模型學習從特徵 X 預測 Y。第 6、7 章的迴歸與邏輯斯迴歸都是。分成<strong>迴歸</strong>（Y 是數值，例如預測銷售額）和<strong>分類</strong>（Y 是類別，例如預測會不會核卡、郵件是不是垃圾信）。用測試誤差、正確率、AUC 評估。</li>
+<li><strong>監督式學習</strong>（supervised learning）：資料有「答案」（標籤、<span class="gl" tabindex="0" role="button" data-g="反應變數">反應變數</span> Y），模型學習從特徵 X 預測 Y。第 6、7 章的迴歸與邏輯斯迴歸都是。分成<strong>迴歸</strong>（Y 是數值，例如預測銷售額）和<strong>分類</strong>（Y 是類別，例如預測會不會核卡、郵件是不是垃圾信）。用測試誤差、正確率、AUC 評估。</li>
 <li><strong>非監督式學習</strong>（unsupervised learning）：資料<strong>沒有</strong> Y，只有特徵，目標是找出資料本身的結構。例如<strong>集群分析</strong>（clustering，把相似的顧客分成幾群做市場區隔）、<strong>降維</strong>（dimension reduction）。沒有「正確答案」可以對照，評估比較主觀。</li>
 </ul>
 <p>機器學習中把變數叫做<strong>特徵</strong>（feature）或屬性（attribute），統計上就是變數（variable）。</p>
@@ -347,6 +347,6 @@
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
 <script src="assets/search.js?v=f1f7e863"></script>
-<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>

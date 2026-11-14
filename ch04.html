@@ -127,7 +127,7 @@
 <figure class="rfig"><a href="assets/fig/ch04-unnamed-chunk-7-1.png" target="_blank"><img src="assets/fig/ch04-unnamed-chunk-7-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
 <ul>
 <li><code>dbinom(0:10, n, p)</code>：一次算出成功 0 次到 10 次的機率，得到 11 個數字，加起來等於 1。</li>
-<li><code>barplot()</code> 畫長條圖；<code>names.arg</code> 設定每根長條下方的標籤。</li>
+<li><code>barplot()</code> 畫<span class="gl" tabindex="0" role="button" data-g="長條圖">長條圖</span>；<code>names.arg</code> 設定每根長條下方的標籤。</li>
 <li>最可能是 2 次（np = 2.5 附近），超過 6 次的機率已經非常小。</li>
 </ul>
 <h3 id="s4-3-3">用 ggplot2 畫</h3>
@@ -244,7 +244,7 @@
 <li><code>hist()</code> 把資料切成很多個區間，數每個區間有幾個值；<code>breaks</code> 控制大約切幾段。</li>
 <li><code>density()</code> 是<strong>核密度估計</strong>（kernel density estimation）：用平滑曲線估計資料的分配形狀，不受分箱方式影響。</li>
 </ul>
-<p>兩者疊在一起最常見——直方圖要改用「密度」當 y 軸（<code>probability = TRUE</code>），曲線才對得上：</p>
+<p>兩者疊在一起最常見——<span class="gl" tabindex="0" role="button" data-g="直方圖">直方圖</span>要改用「密度」當 y 軸（<code>probability = TRUE</code>），曲線才對得上：</p>
 <div class="code runnable"><button class="copy" type="button" aria-label="複製程式碼">複製</button><button class="run" type="button" aria-label="在網頁上執行這段程式">▶ 執行</button><span class="lang">R</span><pre><code><span class="nf">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span>
 <span class="n">height</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rnorm</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">170</span><span class="p">,</span><span class="w"> </span><span class="n">sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="p">)</span>
 <span class="nf">hist</span><span class="p">(</span><span class="n">height</span><span class="p">,</span><span class="w"> </span><span class="n">probability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">25</span><span class="p">,</span>
@@ -508,6 +508,6 @@
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
 <script src="assets/search.js?v=f1f7e863"></script>
-<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>

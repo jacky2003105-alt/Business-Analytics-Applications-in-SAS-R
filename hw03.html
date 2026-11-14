@@ -16,7 +16,7 @@
 <li>資料清理：<code>filter()</code>、<code>mutate()</code>、<code>ifelse()</code>、<code>is.na()</code>（<a href="ch01.html#s1-9">第 1 章 1.9</a>、<a href="ch02.html#s2-2">第 2 章 2.2</a>）</li>
 <li>切分<span class="gl" tabindex="0" role="button" data-g="訓練集">訓練集</span>與<span class="gl" tabindex="0" role="button" data-g="測試集">測試集</span>：<code>sample()</code>（<a href="ch08.html#s8-2">第 8 章 8.2</a>）</li>
 <li>決策樹、<span class="gl" tabindex="0" role="button" data-g="混淆矩陣">混淆矩陣</span>、<span class="gl" tabindex="0" role="button" data-g="敏感度">敏感度</span>與<span class="gl" tabindex="0" role="button" data-g="特異度">特異度</span>：<code>rpart()</code>、<code>rpart.plot()</code>、<code>table()</code>（<a href="ch10.html#s10-3">第 10 章 10.1、10.3</a>）</li>
-<li><span class="gl" tabindex="0" role="button" data-g="標準化">標準化</span>與 K-means、肘部法則、輪廓係數：<code>scale()</code>、<code>kmeans()</code>、<code>fviz_nbclust()</code>（<a href="ch09.html#s9-3">第 9 章 9.2～9.4</a>）</li>
+<li><span class="gl" tabindex="0" role="button" data-g="標準化">標準化</span>與 K-means、<span class="gl" tabindex="0" role="button" data-g="肘部法">肘部法</span>則、<span class="gl" tabindex="0" role="button" data-g="輪廓係數">輪廓係數</span>：<code>scale()</code>、<code>kmeans()</code>、<code>fviz_nbclust()</code>（<a href="ch09.html#s9-3">第 9 章 9.2～9.4</a>）</li>
 <li>描述各群：<code>group_by()</code> + <code>summarise()</code>、<code>count()</code>、<code>ggplot()</code>（<a href="ch09.html#s9-6">第 9 章 9.6</a>）</li>
 </ul>
 <p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個<span class="gl" tabindex="0" role="button" data-g="函數">函數</span>的地方。</p>
@@ -97,7 +97,7 @@
 <pre class="out"><code>## [1] 20000    20</code></pre>
 <ul>
 <li>選入的是<strong>訂房當下就知道</strong>的資訊：飯店、提前天數、住宿晚數、人數、餐食、通路、過去紀錄、訂金類型、房價、特殊需求等。</li>
-<li><strong>刻意排除</strong>：<code>reservation_status</code>（Canceled／Check-Out，就是答案本身）、<code>reservation_status_date</code>、<code>assigned_room_type</code>（入住時才分配）——這些是「結果發生後才知道」的變數，放進去會造成資料洩漏（<a href="ch10.html#s10-3">第 10 章 10.3</a> 的提醒），正確率看起來很高但無法用來預測。抵達日期的細項也不放，讓模型著重在訂房特徵。</li>
+<li><strong>刻意排除</strong>：<code>reservation_status</code>（Canceled／Check-Out，就是答案本身）、<code>reservation_status_date</code>、<code>assigned_room_type</code>（入住時才分配）——這些是「結果發生後才知道」的變數，放進去會造成資料洩漏（<a href="ch10.html#s10-3">第 10 章 10.3</a> 的提醒），<span class="gl" tabindex="0" role="button" data-g="正確率">正確率</span>看起來很高但無法用來預測。抵達日期的細項也不放，讓模型著重在訂房特徵。</li>
 <li><code>is_canceled</code> 轉成<span class="gl" tabindex="0" role="button" data-g="因子">因子</span>，<a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><code>rpart()</code></a> 才會做分類樹。</li>
 </ul>
 <h3 id="s1-2-2">切分 70% / 30%</h3>
@@ -209,7 +209,7 @@
 <ul>
 <li>選 8 個描述「這筆訂房長什麼樣子」的數值變數：提前天數、住宿晚數、成人數、小孩數、房價、特殊需求數、停車位數、修改次數。<strong>is_canceled 不放</strong>（題目規定，也因為我們要事後拿取消率來比較各群）。</li>
 <li>變數單位差很多（提前天數可達數百天、停車位只有 0～3），所以先用 <a class="fnref" href="ch09.html#s9-2" title="課程：第 9 章 9.2・距離與標準化"><code>scale()</code></a> 標準化成平均 0、<span class="gl" tabindex="0" role="button" data-g="標準差">標準差</span> 1（<a href="ch09.html#s9-2">第 9 章 9.2</a>）。</li>
-<li>方法選 <strong>K-means</strong>：20,000 筆資料用階層式分群要算約兩億個距離，K-means 快得多。</li>
+<li>方法選 <strong>K-means</strong>：20,000 筆資料用<span class="gl" tabindex="0" role="button" data-g="階層式分群">階層式分群</span>要算約兩億個距離，K-means 快得多。</li>
 </ul>
 <h3 id="s2-1-2">肘部法則</h3>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">wss</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">()</span><span class="w">                                  </span><span class="c1"># 先準備一個空向量</span>
@@ -235,7 +235,7 @@
 <figure class="rfig"><a href="assets/fig/hw03-unnamed-chunk-13-1.png" target="_blank"><img src="assets/fig/hw03-unnamed-chunk-13-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
 <p>說明：</p>
 <ul>
-<li><strong>肘部法則</strong>：用 <a class="fnref" href="ch03.html#s3-6-1" title="課程：第 3 章 3.6・for：已知要重複幾次"><code>for</code></a> <span class="gl" tabindex="0" role="button" data-g="迴圈">迴圈</span>對 k = 1～10 各跑一次 K-means，把總群內平方和 <code>$tot.withinss</code> 存進<span class="gl" tabindex="0" role="button" data-g="向量">向量</span>，再用 <code>plot(type = &quot;b&quot;)</code> 畫成折線圖（<a href="ch09.html#s9-4">第 9 章 9.4</a> 課後題的做法）。<code>fviz_nbclust(method = &quot;wss&quot;)</code> 會先算 20,000 筆兩兩之間的距離（需要好幾 GB 記憶體），所以這裡自己算。<code>-diff(wss)</code> 是「每多分一群減少多少」（<code>diff()</code> 是相鄰兩個值的差）。k 從 4 到 5 還能減少 13,528，5 到 6 之後每次只減少 9,095、7,179……曲線在 k = 5 之後明顯變平。</li>
+<li><strong>肘部法則</strong>：用 <a class="fnref" href="ch03.html#s3-6-1" title="課程：第 3 章 3.6・for：已知要重複幾次"><code>for</code></a> <span class="gl" tabindex="0" role="button" data-g="迴圈">迴圈</span>對 k = 1～10 各跑一次 K-means，把總群內平方和 <code>$tot.withinss</code> 存進<span class="gl" tabindex="0" role="button" data-g="向量">向量</span>，再用 <code>plot(type = &quot;b&quot;)</code> 畫成<span class="gl" tabindex="0" role="button" data-g="折線圖">折線圖</span>（<a href="ch09.html#s9-4">第 9 章 9.4</a> 課後題的做法）。<code>fviz_nbclust(method = &quot;wss&quot;)</code> 會先算 20,000 筆兩兩之間的距離（需要好幾 GB 記憶體），所以這裡自己算。<code>-diff(wss)</code> 是「每多分一群減少多少」（<code>diff()</code> 是相鄰兩個值的差）。k 從 4 到 5 還能減少 13,528，5 到 6 之後每次只減少 9,095、7,179……曲線在 k = 5 之後明顯變平。</li>
 <li><strong>輪廓係數</strong>：要算所有點兩兩之間的距離，20,000 筆太大，所以隨機抽 3,000 筆計算（<a href="ch09.html#s9-4">第 9 章 9.4</a> 的提醒）。輪廓係數在少數幾群時較高、之後下降，沒有在 5 以後明顯回升。</li>
 <li><strong>選 k = 5</strong>：兩種方法加上<strong>可解釋性</strong>——下一節會看到 5 群各自有清楚、互不重複的特徵（家庭、自駕、提早訂房、高需求、一般短住），群數再多就開始出現難以命名的小群。</li>
 </ul>
@@ -437,6 +437,6 @@
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
 <script src="assets/search.js?v=f1f7e863"></script>
-<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>

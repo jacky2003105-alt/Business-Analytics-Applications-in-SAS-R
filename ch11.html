@@ -87,7 +87,7 @@
 </code></pre></div>
 <pre class="out"><code>## [1] 0.6201 0.8675 0.9566 1.0000</code></pre>
 <ol>
-<li><strong>陡坡圖</strong>（scree plot）：畫出各主成分的變異，找曲線的轉折點（和第 9 章肘部法則一樣的想法）。</li>
+<li><strong>陡坡圖</strong>（scree plot）：畫出各主成分的變異，找曲線的轉折點（和第 9 章<span class="gl" tabindex="0" role="button" data-g="肘部法">肘部法</span>則一樣的想法）。</li>
 <li><strong>Kaiser 準則</strong>：只保留<strong>特徵值大於 1</strong> 的主成分（藍色虛線）。資料標準化後每個原變數的變異是 1，特徵值大於 1 表示這個主成分「比一個原變數還有資訊量」。這裡只有 PC1 的特徵值 &gt; 1。</li>
 <li><strong>累積解釋變異達 80%</strong>：保留到累積比例超過 0.8 為止。這裡需要 2 個主成分。</li>
 </ol>
@@ -218,7 +218,7 @@
 <pre class="out"><code>## [1] 0.9581</code></pre></div><div class="why"><p class="sh">解析</p><p><code>sdev</code> 是各主成分的標準差，平方是特徵值（變異），除以總和就是解釋比例；<code>cumsum()</code> 累加。前兩個主成分約解釋 96%，也可以從 <code>summary(p)</code> 的 Cumulative Proportion 讀到。</p></div></div></article></section></section><section class="sec" id="s11-5" data-label="11.5 本章小結"><h2><span class="num">11.5</span>本章小結</h2><ul>
 <li>維度縮減：特徵選取（挑出原變數）與特徵萃取（組合成新變數，例如 PCA）。</li>
 <li>PCA：<code>prcomp(x, center = TRUE, scale = TRUE)</code>；<code>summary()</code> 看各主成分解釋比例與累積比例；<code>$rotation</code> 是負荷量、<code>$x</code> 是主成分分數、<code>biplot()</code> 雙標圖。</li>
-<li>保留幾個：陡坡圖、Kaiser 準則（特徵值 <code>sdev^2</code> &gt; 1）、累積解釋達 80%。</li>
+<li>保留幾個：<span class="gl" tabindex="0" role="button" data-g="陡坡圖">陡坡圖</span>、Kaiser 準則（<span class="gl" tabindex="0" role="button" data-g="特徵值">特徵值</span> <code>sdev^2</code> &gt; 1）、累積解釋達 80%。</li>
 <li>解讀主成分：看負荷量絕對值大的變數與正負號，替主成分命名。</li>
 <li>SPCA：<code>nsprcomp::nscumcomp(ncomp, k, nneg = TRUE, scale. = TRUE)</code>，讓不重要的負荷量為 0，好解釋但解釋變異較少。</li>
 <li>應用：影像壓縮（用前幾個主成分重建矩陣）、降維後再分群或建模。</li>
@@ -227,6 +227,6 @@
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
 <script src="assets/search.js?v=f1f7e863"></script>
-<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>
