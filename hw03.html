@@ -1,28 +1,32 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>作業 3 飯店訂房取消預測與客群分析｜商業分析：R課程筆記</title>
+<title>作業 3 飯店訂房取消預測與客群分析｜商業分析：R</title>
+<meta name="color-scheme" content="light dark">
+<script>try{var t=localStorage.getItem('notes:theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=113869c6">
-</head><body data-page="hw03" data-mode="hw">
-<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
-<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇單元"><option value="hw01.html">作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html" selected>作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html">作業 4　財務指標的主成分分析</option></select></div></div>
-<main class="wrap"><header class="ch-head"><h1>作業 3　飯店訂房取消預測與客群分析</h1><details class="ch-toc"><summary>本頁目錄（6 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>資料讀取、清理與抽樣（兩題共用）</a></li><li><a href="#s1-2"><span>1.2</span>決策樹預測訂房是否取消</a></li><li><a href="#s2-1"><span>2.1</span>分群變數、標準化與群數選擇</a></li><li><a href="#s2-2"><span>2.2</span>描述各群並命名</a></li><li><a href="#s2-3"><span>2.3</span>各群的取消率、飯店類型與市場區隔</a></li><li><a href="#s2-4"><span>2.4</span>給飯店的商業策略建議</a></li></ol></details></header>
-<div class="ch-intro"><p>作業 3 用葡萄牙兩家飯店 119,390 筆訂房紀錄，做兩件事：第 1 題用<strong>監督式學習</strong>（決策樹）預測訂房是否會取消；第 2 題用<strong>非監督式學習</strong>（K-means）把訂房分成幾種客群，比較各群的取消率與組成，最後提出營運與行銷策略。用到的課堂內容：</p>
+<link rel="stylesheet" href="assets/style.css?v=f238fc88">
+
+</head><body data-page="hw03" data-mode="hw" data-course="ba" data-key="ba">
+<a class="skip" href="#main">跳到主要內容</a>
+<header class="topbar"><a class="brand" href="index.html" aria-label="商業分析：R｜課程筆記首頁"><span class="logo" aria-hidden="true">R</span><span>商業分析：R</span><span class="sub">｜課程筆記</span></a>
+<div class="pickers"><nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇作業"><option value="hw01.html">作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html" selected>作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html">作業 4　財務指標的主成分分析</option></select></div></header>
+<main class="wrap" id="main"><nav class="crumbs" aria-label="目前位置"><a href="index.html">首頁</a><span class="sep">›</span><span>作業</span><span class="sep">›</span><span>作業 3</span></nav><header class="ch-head"><p class=eyebrow>作業 3</p><h1>飯店訂房取消預測與客群分析</h1><p class="ch-meta"><span>6 節</span><span>閱讀約 38 分鐘</span></p><details class="ch-toc"><summary>本頁目錄（6 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>資料讀取、清理與抽樣（兩題共用）</a></li><li><a href="#s1-2"><span>1.2</span>決策樹預測訂房是否取消</a></li><li><a href="#s2-1"><span>2.1</span>分群變數、標準化與群數選擇</a></li><li><a href="#s2-2"><span>2.2</span>描述各群並命名</a></li><li><a href="#s2-3"><span>2.3</span>各群的取消率、飯店類型與市場區隔</a></li><li><a href="#s2-4"><span>2.4</span>給飯店的商業策略建議</a></li></ol></details></header>
+<div class="ch-intro"><p>作業 3 用葡萄牙兩家飯店 119,390 筆訂房紀錄，做兩件事：第 1 題用<strong><span class="gl" tabindex="0" role="button" data-g="監督式學習">監督式學習</span></strong>（<span class="gl" tabindex="0" role="button" data-g="決策樹">決策樹</span>）預測訂房是否會取消；第 2 題用<strong><span class="gl" tabindex="0" role="button" data-g="非監督式學習">非監督式學習</span></strong>（<span class="gl" tabindex="0" role="button" data-g="K-means">K-means</span>）把訂房分成幾種客群，比較各群的取消率與組成，最後提出營運與行銷策略。用到的課堂內容：</p>
 <ul>
 <li>資料清理：<code>filter()</code>、<code>mutate()</code>、<code>ifelse()</code>、<code>is.na()</code>（<a href="ch01.html#s1-9">第 1 章 1.9</a>、<a href="ch02.html#s2-2">第 2 章 2.2</a>）</li>
-<li>切分訓練集與測試集：<code>sample()</code>（<a href="ch08.html#s8-2">第 8 章 8.2</a>）</li>
-<li>決策樹、混淆矩陣、敏感度與特異度：<code>rpart()</code>、<code>rpart.plot()</code>、<code>table()</code>（<a href="ch10.html#s10-3">第 10 章 10.1、10.3</a>）</li>
-<li>標準化與 K-means、肘部法則、輪廓係數：<code>scale()</code>、<code>kmeans()</code>、<code>fviz_nbclust()</code>（<a href="ch09.html#s9-3">第 9 章 9.2～9.4</a>）</li>
+<li>切分<span class="gl" tabindex="0" role="button" data-g="訓練集">訓練集</span>與<span class="gl" tabindex="0" role="button" data-g="測試集">測試集</span>：<code>sample()</code>（<a href="ch08.html#s8-2">第 8 章 8.2</a>）</li>
+<li>決策樹、<span class="gl" tabindex="0" role="button" data-g="混淆矩陣">混淆矩陣</span>、<span class="gl" tabindex="0" role="button" data-g="敏感度">敏感度</span>與<span class="gl" tabindex="0" role="button" data-g="特異度">特異度</span>：<code>rpart()</code>、<code>rpart.plot()</code>、<code>table()</code>（<a href="ch10.html#s10-3">第 10 章 10.1、10.3</a>）</li>
+<li><span class="gl" tabindex="0" role="button" data-g="標準化">標準化</span>與 K-means、肘部法則、輪廓係數：<code>scale()</code>、<code>kmeans()</code>、<code>fviz_nbclust()</code>（<a href="ch09.html#s9-3">第 9 章 9.2～9.4</a>）</li>
 <li>描述各群：<code>group_by()</code> + <code>summarise()</code>、<code>count()</code>、<code>ggplot()</code>（<a href="ch09.html#s9-6">第 9 章 9.6</a>）</li>
 </ul>
-<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個函數的地方。</p>
+<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個<span class="gl" tabindex="0" role="button" data-g="函數">函數</span>的地方。</p>
 <p>資料：<a href="https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-11/hotels.csv">hotels.csv（tidytuesday 原始檔）</a>，下載後放在工作目錄。</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">rpart</span><span class="p">)</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">rpart.plot</span><span class="p">)</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">factoextra</span><span class="p">)</span>
 <span class="nf">set.seed</span><span class="p">(</span><span class="m">2026</span><span class="p">)</span><span class="w">        </span><span class="c1"># 題目規定：程式開頭執行一次</span>
-</code></pre></div></div><section class="sec" id="s1-1" data-label="1.1 資料讀取、清理與抽樣（兩題共用）"><h2><span class="num">1.1</span>資料讀取、清理與抽樣（兩題共用）</h2><details class="refbox" open><summary>對應課程內容（8 處）</summary><ul><li><a href="ch01.html#s1-8-2">第 1 章 1.8・讀 CSV：read.csv()</a>（read.csv）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（dim、nrow）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（mean、sum、summary）</li><li><a href="ch01.html#s1-9-2">第 1 章 1.9・資料框的缺失值</a>（is.na）</li><li><a href="ch02.html#s2-2-1">第 2 章 2.2・filter()：依條件挑列</a>（filter）</li><li><a href="ch02.html#s2-2-3">第 2 章 2.2・mutate()：新增欄位</a>（mutate）</li><li><a href="ch03.html#s3-5-2">第 3 章 3.5・ifelse()：向量化的判斷</a>（ifelse）</li><li><a href="ch04.html#s4-2-1">第 4 章 4.2・sample()：從一組值中抽樣</a>（sample）</li></ul></details><div class="box task"><span class="tag">題目</span><p>資料為葡萄牙兩家飯店（City Hotel、Resort Hotel）預計於 2015 年 7 月至 2017 年 8 月入住的 119,390 筆訂房紀錄，應變數為 is_canceled（1 = 取消或未到）。注意事項：children 有 4 筆 NA；country、agent、company 以字串 "NULL" 表示缺失（company 約 94% 為 "NULL"）；adr 有負值與極端值；少數訂房的成人、兒童、嬰兒人數皆為 0，請說明處理方式。不需使用所有變數；類別數多的變數可刪除或合併；可隨機抽取部分資料（例如 20,000 筆）並註明抽樣筆數。</p></div>
+</code></pre></div></div><section class="sec" id="s1-1" data-label="1.1 資料讀取、清理與抽樣（兩題共用）"><h2><span class="num">1.1</span>資料讀取、清理與抽樣（兩題共用）</h2><details class="refbox" open><summary>對應課程內容（8 處）</summary><ul><li><a href="ch01.html#s1-8-2">第 1 章 1.8・讀 CSV：read.csv()</a>（read.csv）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（dim、nrow）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（mean、sum、summary）</li><li><a href="ch01.html#s1-9-2">第 1 章 1.9・資料框的缺失值</a>（is.na）</li><li><a href="ch02.html#s2-2-1">第 2 章 2.2・filter()：依條件挑列</a>（filter）</li><li><a href="ch02.html#s2-2-3">第 2 章 2.2・mutate()：新增欄位</a>（mutate）</li><li><a href="ch03.html#s3-5-2">第 3 章 3.5・ifelse()：向量化的判斷</a>（ifelse）</li><li><a href="ch04.html#s4-2-1">第 4 章 4.2・sample()：從一組值中抽樣</a>（sample）</li></ul></details><div class="box task"><span class="tag">題目</span><p>資料為葡萄牙兩家飯店（City Hotel、Resort Hotel）預計於 2015 年 7 月至 2017 年 8 月入住的 119,390 筆訂房紀錄，應變數為 is_canceled（1 = 取消或未到）。注意事項：children 有 4 筆 <span class="gl" tabindex="0" role="button" data-g="NA">NA</span>；country、agent、company 以字串 "NULL" 表示缺失（company 約 94% 為 "NULL"）；adr 有負值與極端值；少數訂房的成人、兒童、嬰兒人數皆為 0，請說明處理方式。不需使用所有變數；類別數多的變數可刪除或合併；可隨機抽取部分資料（例如 20,000 筆）並註明抽樣筆數。</p></div>
 <h3 id="s1-1-1">讀檔與檢查問題</h3>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">hotels</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><span class="nf">read.csv</span></a><span class="p">(</span><span class="s">"hotels.csv"</span><span class="p">)</span>
 <a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">dim</span></a><span class="p">(</span><span class="n">hotels</span><span class="p">)</span>
@@ -94,7 +98,7 @@
 <ul>
 <li>選入的是<strong>訂房當下就知道</strong>的資訊：飯店、提前天數、住宿晚數、人數、餐食、通路、過去紀錄、訂金類型、房價、特殊需求等。</li>
 <li><strong>刻意排除</strong>：<code>reservation_status</code>（Canceled／Check-Out，就是答案本身）、<code>reservation_status_date</code>、<code>assigned_room_type</code>（入住時才分配）——這些是「結果發生後才知道」的變數，放進去會造成資料洩漏（<a href="ch10.html#s10-3">第 10 章 10.3</a> 的提醒），正確率看起來很高但無法用來預測。抵達日期的細項也不放，讓模型著重在訂房特徵。</li>
-<li><code>is_canceled</code> 轉成因子，<a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><code>rpart()</code></a> 才會做分類樹。</li>
+<li><code>is_canceled</code> 轉成<span class="gl" tabindex="0" role="button" data-g="因子">因子</span>，<a class="fnref" href="ch10.html#s10-3" title="課程：第 10 章 10.3・決策樹"><code>rpart()</code></a> 才會做分類樹。</li>
 </ul>
 <h3 id="s1-2-2">切分 70% / 30%</h3>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">train_id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><a class="fnref" href="ch04.html#s4-2-1" title="課程：第 4 章 4.2・sample()：從一組值中抽樣"><span class="nf">sample</span></a><span class="p">(</span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">model_data</span><span class="p">),</span><span class="w"> </span><span class="m">0.7</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><a class="fnref" href="ch01.html#s1-6-2" title="課程：第 1 章 1.6・拿到資料先檢查"><span class="nf">nrow</span></a><span class="p">(</span><span class="n">model_data</span><span class="p">))</span>
@@ -204,7 +208,7 @@
 ##                           1                           1</code></pre>
 <ul>
 <li>選 8 個描述「這筆訂房長什麼樣子」的數值變數：提前天數、住宿晚數、成人數、小孩數、房價、特殊需求數、停車位數、修改次數。<strong>is_canceled 不放</strong>（題目規定，也因為我們要事後拿取消率來比較各群）。</li>
-<li>變數單位差很多（提前天數可達數百天、停車位只有 0～3），所以先用 <a class="fnref" href="ch09.html#s9-2" title="課程：第 9 章 9.2・距離與標準化"><code>scale()</code></a> 標準化成平均 0、標準差 1（<a href="ch09.html#s9-2">第 9 章 9.2</a>）。</li>
+<li>變數單位差很多（提前天數可達數百天、停車位只有 0～3），所以先用 <a class="fnref" href="ch09.html#s9-2" title="課程：第 9 章 9.2・距離與標準化"><code>scale()</code></a> 標準化成平均 0、<span class="gl" tabindex="0" role="button" data-g="標準差">標準差</span> 1（<a href="ch09.html#s9-2">第 9 章 9.2</a>）。</li>
 <li>方法選 <strong>K-means</strong>：20,000 筆資料用階層式分群要算約兩億個距離，K-means 快得多。</li>
 </ul>
 <h3 id="s2-1-2">肘部法則</h3>
@@ -231,7 +235,7 @@
 <figure class="rfig"><a href="assets/fig/hw03-unnamed-chunk-13-1.png" target="_blank"><img src="assets/fig/hw03-unnamed-chunk-13-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
 <p>說明：</p>
 <ul>
-<li><strong>肘部法則</strong>：用 <a class="fnref" href="ch03.html#s3-6-1" title="課程：第 3 章 3.6・for：已知要重複幾次"><code>for</code></a> 迴圈對 k = 1～10 各跑一次 K-means，把總群內平方和 <code>$tot.withinss</code> 存進向量，再用 <code>plot(type = &quot;b&quot;)</code> 畫成折線圖（<a href="ch09.html#s9-4">第 9 章 9.4</a> 課後題的做法）。<code>fviz_nbclust(method = &quot;wss&quot;)</code> 會先算 20,000 筆兩兩之間的距離（需要好幾 GB 記憶體），所以這裡自己算。<code>-diff(wss)</code> 是「每多分一群減少多少」（<code>diff()</code> 是相鄰兩個值的差）。k 從 4 到 5 還能減少 13,528，5 到 6 之後每次只減少 9,095、7,179……曲線在 k = 5 之後明顯變平。</li>
+<li><strong>肘部法則</strong>：用 <a class="fnref" href="ch03.html#s3-6-1" title="課程：第 3 章 3.6・for：已知要重複幾次"><code>for</code></a> <span class="gl" tabindex="0" role="button" data-g="迴圈">迴圈</span>對 k = 1～10 各跑一次 K-means，把總群內平方和 <code>$tot.withinss</code> 存進<span class="gl" tabindex="0" role="button" data-g="向量">向量</span>，再用 <code>plot(type = &quot;b&quot;)</code> 畫成折線圖（<a href="ch09.html#s9-4">第 9 章 9.4</a> 課後題的做法）。<code>fviz_nbclust(method = &quot;wss&quot;)</code> 會先算 20,000 筆兩兩之間的距離（需要好幾 GB 記憶體），所以這裡自己算。<code>-diff(wss)</code> 是「每多分一群減少多少」（<code>diff()</code> 是相鄰兩個值的差）。k 從 4 到 5 還能減少 13,528，5 到 6 之後每次只減少 9,095、7,179……曲線在 k = 5 之後明顯變平。</li>
 <li><strong>輪廓係數</strong>：要算所有點兩兩之間的距離，20,000 筆太大，所以隨機抽 3,000 筆計算（<a href="ch09.html#s9-4">第 9 章 9.4</a> 的提醒）。輪廓係數在少數幾群時較高、之後下降，沒有在 5 以後明顯回升。</li>
 <li><strong>選 k = 5</strong>：兩種方法加上<strong>可解釋性</strong>——下一節會看到 5 群各自有清楚、互不重複的特徵（家庭、自駕、提早訂房、高需求、一般短住），群數再多就開始出現難以命名的小群。</li>
 </ul>
@@ -429,8 +433,10 @@
 <li><strong>整體</strong>：把決策樹的取消預測用在每一筆新訂房上——預測會取消的訂房提高訂金或加強確認，預測不會取消的提供彈性條件；超賣房數則依預測取消數量決定。</li>
 </ul>
 <div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>根據決策樹與分群的結果，我對不同客群提出以下策略。第一，「提早規劃的長住客」取消率最高（58.8%），其中訂金不可退的比例（31%）為各群最高，本國旅客約占一半（50%），團體訂房比例也最高，這些特徵正好對應決策樹中取消率高的分支。建議對提前很久的訂房改採分段收取訂金，並對旅行社與團體的大量占房設定確認期限，逾期未確認即釋出房間；同時可依模型預測的取消機率對這一群適度超賣，並在入住前 30 天與 14 天主動發送確認通知，及早釋出可能取消的房間。第二，「臨時短住的一般散客」人數最多、房價最低、取消率約 37%，且以線上旅行社為主，建議在通路上同時提供「不可退款的較低價」與「可免費取消的較高價」兩種方案，以差別定價將取消風險轉為收入，並以會員直訂優惠將顧客導向官網。第三，「親子家庭客」房價最高、特殊需求多，建議推出包含加床、兒童早餐與親子活動的家庭套裝提高客單價，並搭配可退訂金，降低家長因突發狀況而取消的顧慮。第四，「重視細節的高需求客」取消率較低（27.2%）且願意支付較高房價，而決策樹也顯示有提出特殊需求的訂房較不會取消，因此建議在訂房流程中主動詢問需求，並推薦房型升等、景觀房與晚退房等加購服務。第五，「自駕度假客」幾乎不會取消（0%），以度假飯店與直接訂房為主，建議維持充足停車位並推出「住宿加停車」套裝與回頭客優惠，不需嚴格的訂金政策。整體而言，飯店可以將決策樹的預測套用在每一筆新訂房上，對預測會取消的訂房提高訂金或加強確認，並依預測的取消數量決定超賣房數，以降低空房損失。</p></div></div></section>
-<nav class="pager"><a class="prev" href="hw02.html">← 作業 2</a><a class="next" href="hw04.html">作業 4 →</a></nav></main>
+<nav class="pager" aria-label="上一頁與下一頁"><a class="prev" href="hw02.html"><small>← 上一份</small>作業 2　廣告點擊與集點公仔模擬</a><a class="next" href="hw04.html"><small>下一份 →</small>作業 4　財務指標的主成分分析</a></nav></main>
+<footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=e581631e"></script>
-<script src="assets/site.js?v=ba35a458"></script>
+<script src="assets/search.js?v=e3a678b7"></script>
+<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/site.js?v=ddb9f3f8"></script>
 </body></html>

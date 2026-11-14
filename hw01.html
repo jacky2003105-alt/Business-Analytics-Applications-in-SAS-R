@@ -1,12 +1,16 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>作業 1 空氣品質資料整理與咖啡店會員分析｜商業分析：R課程筆記</title>
+<title>作業 1 空氣品質資料整理與咖啡店會員分析｜商業分析：R</title>
+<meta name="color-scheme" content="light dark">
+<script>try{var t=localStorage.getItem('notes:theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=113869c6">
-</head><body data-page="hw01" data-mode="hw">
-<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
-<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇單元"><option value="hw01.html" selected>作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html">作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html">作業 4　財務指標的主成分分析</option></select></div></div>
-<main class="wrap"><header class="ch-head"><h1>作業 1　空氣品質資料整理與咖啡店會員分析</h1><details class="ch-toc"><summary>本頁目錄（7 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>空氣品質資料整理成 tidy 格式</a></li><li><a href="#s1-2"><span>1.2</span>各測站月平均、超標天數與折線圖</a></li><li><a href="#s2-1"><span>2.1</span>拆開 menu 的商品編號與名稱</a></li><li><a href="#s2-2"><span>2.2</span>OrderID 命名與三表合併</a></li><li><a href="#s2-3"><span>2.3</span>新增實付金額 spend</a></li><li><a href="#s2-4"><span>2.4</span>會員等級分組比較</a></li><li><a href="#s2-5"><span>2.5</span>年齡層的消費比較</a></li></ol></details></header>
+<link rel="stylesheet" href="assets/style.css?v=f238fc88">
+
+</head><body data-page="hw01" data-mode="hw" data-course="ba" data-key="ba">
+<a class="skip" href="#main">跳到主要內容</a>
+<header class="topbar"><a class="brand" href="index.html" aria-label="商業分析：R｜課程筆記首頁"><span class="logo" aria-hidden="true">R</span><span>商業分析：R</span><span class="sub">｜課程筆記</span></a>
+<div class="pickers"><nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇作業"><option value="hw01.html" selected>作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html">作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html">作業 4　財務指標的主成分分析</option></select></div></header>
+<main class="wrap" id="main"><nav class="crumbs" aria-label="目前位置"><a href="index.html">首頁</a><span class="sep">›</span><span>作業</span><span class="sep">›</span><span>作業 1</span></nav><header class="ch-head"><p class=eyebrow>作業 1</p><h1>空氣品質資料整理與咖啡店會員分析</h1><p class="ch-meta"><span>7 節</span><span>閱讀約 40 分鐘</span></p><details class="ch-toc"><summary>本頁目錄（7 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>空氣品質資料整理成 tidy 格式</a></li><li><a href="#s1-2"><span>1.2</span>各測站月平均、超標天數與折線圖</a></li><li><a href="#s2-1"><span>2.1</span>拆開 menu 的商品編號與名稱</a></li><li><a href="#s2-2"><span>2.2</span>OrderID 命名與三表合併</a></li><li><a href="#s2-3"><span>2.3</span>新增實付金額 spend</a></li><li><a href="#s2-4"><span>2.4</span>會員等級分組比較</a></li><li><a href="#s2-5"><span>2.5</span>年齡層的消費比較</a></li></ol></details></header>
 <div class="ch-intro"><p>作業 1 有兩大題：第 1 題把一份「日期擺在欄名」的空氣品質資料整理成整齊資料，再做月平均與折線圖；第 2 題把連鎖咖啡店的三張表合併，比較不同會員等級與年齡層的消費。全部只用課堂教過的方法完成：</p>
 <ul>
 <li>讀檔與整理：<code>read_csv()</code>、<code>gather()</code>、<code>spread()</code>、<code>separate()</code>（<a href="ch02.html#s2-4">第 2 章 2.4</a>）</li>
@@ -15,7 +19,7 @@
 <li>分組：<code>ifelse()</code>、<code>%in%</code>、<code>factor()</code>（<a href="ch01.html#s1-5">第 1 章</a>、<a href="ch03.html#s3-5">第 3 章 3.5</a>）</li>
 <li>畫圖：<code>ggplot()</code> + <code>geom_line()</code>、<code>geom_col()</code>（<a href="ch05.html#s5-3">第 5 章 5.3</a>）</li>
 </ul>
-<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個函數的地方。</p>
+<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個<span class="gl" tabindex="0" role="button" data-g="函數">函數</span>的地方。</p>
 <p>資料檔：<a href="data/hw01/air.csv">air.csv</a>、<a href="data/hw01/member.csv">member.csv</a>、<a href="data/hw01/menu.csv">menu.csv</a>、<a href="data/hw01/orders.csv">orders.csv</a>。把四個檔案放在工作目錄，下面的程式碼就能照順序跑出同樣的結果。</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
 </code></pre></div></div><section class="sec" id="s1-1" data-label="1.1 空氣品質資料整理成 tidy 格式"><h2><span class="num">1.1</span>空氣品質資料整理成 tidy 格式</h2><details class="refbox" open><summary>對應課程內容（11 處）</summary><ul><li><a href="ch01.html#s1-8-2">第 1 章 1.8・讀 CSV：read.csv()</a>（read_csv）</li><li><a href="ch01.html#s1-6-2">第 1 章 1.6・拿到資料先檢查</a>（dim）</li><li><a href="ch02.html#s2-4-3">第 2 章 2.4・pivot_longer()／gather()：欄名其實是資料 → 收攏</a>（gather）</li><li><a href="ch02.html#s2-4-4">第 2 章 2.4・separate()：一欄拆成多欄</a>（separate）</li><li><a href="ch02.html#s2-4-2">第 2 章 2.4・pivot_wider()／spread()：一欄裝了兩個變數 → 攤開</a>（spread）</li><li><a href="ch02.html#s2-2-3">第 2 章 2.2・mutate()：新增欄位</a>（mutate）</li><li><a href="ch01.html#s1-1-4">第 1 章 1.1・日期型別：as.Date()</a>（as.Date）</li><li><a href="ch02.html#s2-2-2">第 2 章 2.2・select()：挑欄</a>（select）</li><li><a href="ch02.html#s2-2-4">第 2 章 2.2・arrange()：排序</a>（arrange）</li><li><a href="ch01.html#s1-1-3">第 1 章 1.1・基本資料型別</a>（class）</li><li><a href="ch02.html#s2-2-6">第 2 章 2.2・計數與抽樣：count()、tally()、sample_n()</a>（count）</li></ul></details><div class="box task"><span class="tag">題目</span><p>資料為 2025/1/1～2025/2/28，5 個空氣品質測站的每日平均濃度。<code>site_county</code> 是測站名稱與所在縣市（如「中山 臺北市」），<code>pollutant</code> 是污染物（PM2.5 細懸浮微粒 μg/m³、O3 臭氧 ppb），其餘每一欄是某一天的濃度。請用 tidyr 的 <a class="fnref" href="ch02.html#s2-4-3" title="課程：第 2 章 2.4・pivot_longer()／gather()：欄名其實是資料 → 收攏"><code>gather</code></a>、<a class="fnref" href="ch02.html#s2-4-2" title="課程：第 2 章 2.4・pivot_wider()／spread()：一欄裝了兩個變數 → 攤開"><code>spread</code></a>、<a class="fnref" href="ch02.html#s2-4-4" title="課程：第 2 章 2.4・separate()：一欄拆成多欄"><code>separate</code></a> 等函數，整理成 site、county、date、PM2.5、O3 五欄的 tidy 格式，其中 date 須為日期型態，並依測站、日期排序。</p></div>
@@ -118,7 +122,7 @@
 <ol>
 <li>要依「月份」分組，先用 <a class="fnref" href="ch02.html#s2-4-4" title="課程：第 2 章 2.4・separate()：一欄拆成多欄"><code>separate()</code></a> 以「-」把日期（例如 2025-01-01）拆成 <code>year</code>、<code>month</code>、<code>day</code> 三欄；<code>convert = TRUE</code> 讓拆出來的月份變成數字 1、2，而不是文字 "01"、"02"。</li>
 <li><code>group_by(site, month)</code>：依測站與月份分成 5 × 2 = 10 組。</li>
-<li><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><code>summarise()</code></a> 每組算兩個值：<code>average = mean(PM2.5)</code> 是 PM2.5 的月平均；<code>over35 = sum(PM2.5 &gt; 35)</code> 是超標天數——<code>PM2.5 &gt; 35</code> 在超過 35 的日子是 TRUE，TRUE 加總時算 1（<a href="ch01.html#s1-9">第 1 章 1.9</a> 用 <code>sum(is.na(x))</code> 數 NA 個數也是同一個道理），所以加起來就是天數。</li>
+<li><a class="fnref" href="ch02.html#s2-2-5" title="課程：第 2 章 2.2・summarise() 與 group_by()：先分組、再彙總"><code>summarise()</code></a> 每組算兩個值：<code>average = mean(PM2.5)</code> 是 PM2.5 的月平均；<code>over35 = sum(PM2.5 &gt; 35)</code> 是超標天數——<code>PM2.5 &gt; 35</code> 在超過 35 的日子是 TRUE，TRUE 加總時算 1（<a href="ch01.html#s1-9">第 1 章 1.9</a> 用 <code>sum(is.na(x))</code> 數 <span class="gl" tabindex="0" role="button" data-g="NA">NA</span> 個數也是同一個道理），所以加起來就是天數。</li>
 </ol>
 <p>結果共 10 列：</p>
 <ul>
@@ -452,8 +456,10 @@
 <li>Latte 在三個年齡層都超過 2,000 元，是全店的主力商品；Mocha 在 30 歲以上兩組明顯比未滿 30 歲高；Croissant（單價 85 元，最便宜）在各年齡層都最低。</li>
 </ul>
 <div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>依題目將會員年齡分為「未滿 30 歲」、「30–44 歲」與「45 歲以上」三組。找不到會員資料的 3 筆訂單沒有年齡，無法分組，因此先用 filter(!is.na(Age)) 排除，剩下 147 筆訂單，再以 mutate() 搭配巢狀 ifelse() 建立 age_group，並用 factor() 將三組依年齡由小到大排序。三組各有 10 位會員，訂單數分別為 47、51、49 筆。以 group_by() 與 summarise() 計算平均每筆實付金額，未滿 30 歲為 216 元、30–44 歲為 230 元、45 歲以上為 256 元，呈現隨年齡增加而上升的趨勢。以 count() 統計各通路次數，未滿 30 歲與 45 歲以上最常使用 Store，30–44 歲則最常使用 App，但只比 Store 多 1 筆，差距很小。接著依產品與年齡層加總實付金額，以 geom_col() 搭配 position = "dodge" 繪製並排長條圖。從圖中可見，未滿 30 歲的消費集中在 Latte 與 Americano 等咖啡類；30–44 歲以 Latte 與 Cappuccino 最高，其中 Cappuccino 的實付金額明顯多於其他年齡層；45 歲以上則以單價最高（150 元）的 Cheesecake 實付金額最高，其次為 ColdBrew 與 Latte，這也是 45 歲以上平均每筆消費最高的原因之一。Latte 在三個年齡層都超過 2,000 元，是全店的主力商品；Croissant 在各年齡層都最低。</p></div></div></section>
-<nav class="pager"><span></span><a class="next" href="hw02.html">作業 2 →</a></nav></main>
+<nav class="pager" aria-label="上一頁與下一頁"><a class="next" href="hw02.html"><small>下一份 →</small>作業 2　廣告點擊與集點公仔模擬</a></nav></main>
+<footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=e581631e"></script>
-<script src="assets/site.js?v=ba35a458"></script>
+<script src="assets/search.js?v=e3a678b7"></script>
+<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/site.js?v=ddb9f3f8"></script>
 </body></html>

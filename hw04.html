@@ -1,19 +1,23 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>作業 4 財務指標的主成分分析｜商業分析：R課程筆記</title>
+<title>作業 4 財務指標的主成分分析｜商業分析：R</title>
+<meta name="color-scheme" content="light dark">
+<script>try{var t=localStorage.getItem('notes:theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="stylesheet" href="assets/katex/katex.min.css">
-<link rel="stylesheet" href="assets/style.css?v=113869c6">
-</head><body data-page="hw04" data-mode="hw">
-<div class="topbar"><a class="brand" href="index.html">商業分析：R｜課程筆記</a><div class="pickers">
-<nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇單元"><option value="hw01.html">作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html">作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html" selected>作業 4　財務指標的主成分分析</option></select></div></div>
-<main class="wrap"><header class="ch-head"><h1>作業 4　財務指標的主成分分析</h1><details class="ch-toc"><summary>本頁目錄（4 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>讀入資料與事前檢查</a></li><li><a href="#s1-2"><span>1.2</span>前兩個主成分共能解釋多少變異</a></li><li><a href="#s1-3"><span>1.3</span>前三個主成分的重點變數</a></li><li><a href="#s1-4"><span>1.4</span>依第一主成分找出適合投資的公司</a></li></ol></details></header>
-<div class="ch-intro"><p>作業 4 用一百六十多間公司的 16 個財務指標，以<strong>主成分分析 PCA</strong>（並用 <strong>SPCA</strong> 輔助確認）把很多個指標濃縮成少數幾個有意義的主成分，再依第一主成分說明什麼樣的公司適合投資。用到的課堂內容：</p>
+<link rel="stylesheet" href="assets/style.css?v=f238fc88">
+
+</head><body data-page="hw04" data-mode="hw" data-course="ba" data-key="ba">
+<a class="skip" href="#main">跳到主要內容</a>
+<header class="topbar"><a class="brand" href="index.html" aria-label="商業分析：R｜課程筆記首頁"><span class="logo" aria-hidden="true">R</span><span>商業分析：R</span><span class="sub">｜課程筆記</span></a>
+<div class="pickers"><nav class="mode" aria-label="切換課程或作業"><a href="ch01.html" data-mode="course">課程</a><a href="hw01.html" data-mode="hw" class=on>作業</a></nav><label for="unitSelect">選擇作業</label><select id="unitSelect" aria-label="選擇作業"><option value="hw01.html">作業 1　空氣品質資料整理與咖啡店會員分析</option><option value="hw02.html">作業 2　廣告點擊與集點公仔模擬</option><option value="hw03.html">作業 3　飯店訂房取消預測與客群分析</option><option value="hw04.html" selected>作業 4　財務指標的主成分分析</option></select></div></header>
+<main class="wrap" id="main"><nav class="crumbs" aria-label="目前位置"><a href="index.html">首頁</a><span class="sep">›</span><span>作業</span><span class="sep">›</span><span>作業 4</span></nav><header class="ch-head"><p class=eyebrow>作業 4</p><h1>財務指標的主成分分析</h1><p class="ch-meta"><span>4 節</span><span>閱讀約 24 分鐘</span></p><details class="ch-toc"><summary>本頁目錄（4 節）</summary><ol><li><a href="#s1-1"><span>1.1</span>讀入資料與事前檢查</a></li><li><a href="#s1-2"><span>1.2</span>前兩個主成分共能解釋多少變異</a></li><li><a href="#s1-3"><span>1.3</span>前三個主成分的重點變數</a></li><li><a href="#s1-4"><span>1.4</span>依第一主成分找出適合投資的公司</a></li></ol></details></header>
+<div class="ch-intro"><p>作業 4 用一百六十多間公司的 16 個財務指標，以<strong><span class="gl" tabindex="0" role="button" data-g="主成分分析">主成分分析</span> PCA</strong>（並用 <strong>SPCA</strong> 輔助確認）把很多個指標濃縮成少數幾個有意義的主成分，再依第一主成分說明什麼樣的公司適合投資。用到的課堂內容：</p>
 <ul>
 <li>讀檔與檢查：<code>read_csv()</code>、<code>summary()</code>、<code>cor()</code>（<a href="ch01.html#s1-8">第 1 章 1.8</a>、<a href="ch05.html#s5-1">第 5 章 5.1</a>）</li>
 <li>PCA：<code>prcomp()</code>、<code>summary()</code>、<code>screeplot()</code>、<code>$rotation</code>、<code>biplot()</code>（<a href="ch11.html#s11-2">第 11 章 11.2</a>）</li>
 <li>SPCA：<code>nscumcomp()</code>（<a href="ch11.html#s11-3">第 11 章 11.3</a>）</li>
 </ul>
-<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個函數的地方。</p>
+<p>每一題的結構：題目 → 程式與輸出 → 列點說明在做什麼 → 「可直接貼到作業」的段落文字（按「複製這段」就能貼進 Word）。程式碼和文字中的函數名稱都有虛線底線，點下去會跳到課堂講解那個<span class="gl" tabindex="0" role="button" data-g="函數">函數</span>的地方。</p>
 <p>資料檔：<a href="data/hw04/financialdata.csv">financialdata.csv</a>。</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
 <span class="nf">library</span><span class="p">(</span><span class="n">nsprcomp</span><span class="p">)</span>
@@ -78,7 +82,7 @@
 <li>用 <a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read_csv()</code></a> 讀檔。資料裡有些數字有千分位逗號（例如 "1,708.73"），<a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read_csv()</code></a> 會自動把它們讀成數字；如果用 <a class="fnref" href="ch01.html#s1-8-2" title="課程：第 1 章 1.8・讀 CSV：read.csv()"><code>read.csv()</code></a>，這幾欄會變成文字，要另外處理。</li>
 <li><code>comp_id</code> 是公司代號，數字大小沒有意義，所以用 <code>fin[, -1]</code> 拿掉第 1 欄，剩下 16 個財務指標。</li>
 <li>沒有缺失值（<code>sum(is.na())</code> 是 0）。</li>
-<li><strong>單位差很多</strong>：流動比率大多在一兩百（%），最大到 3,783.42；營業利益成長率從 -449.33 到 1,708.73；ROE 大多在正負幾十之間。所以做 PCA 時一定要標準化（<code>scale = TRUE</code>）。</li>
+<li><strong>單位差很多</strong>：流動比率大多在一兩百（%），最大到 3,783.42；營業利益成長率從 -449.33 到 1,708.73；ROE 大多在正負幾十之間。所以做 PCA 時一定要<span class="gl" tabindex="0" role="button" data-g="標準化">標準化</span>（<code>scale = TRUE</code>）。</li>
 <li><strong>有些指標高度相關</strong>：ROE、ROA、營業利益率彼此相關（都在衡量獲利），流動比率和速動比率的相關接近 0.98——資訊重複，適合用 PCA 濃縮。</li>
 </ul>
 <div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>題目說明有 163 間公司，實際讀入後共有 162 間公司、17 個欄位，我以 read_csv() 讀入，部分數值含有千分位逗號，read_csv() 會自動轉為數值。其中 comp_id 是公司代號而非財務指標，因此先將其刪除，保留 16 個財務指標進行分析，資料中沒有缺失值。檢查後發現各指標的單位與範圍差異很大，例如流動比率最大可達 3,783.42，營業利益成長率介於 -449.33 與 1,708.73 之間，而 ROE 多在正負數十之間，因此進行主成分分析前必須先標準化，避免數值範圍大的指標主導結果。另外，ROE、ROA 與營業利益率彼此高度相關，流動比率與速動比率的相關係數更達 0.98，表示指標之間有不少重複的資訊，適合以主成分分析濃縮成少數幾個主成分。</p></div></div></section><section class="sec" id="s1-2" data-label="1.2 前兩個主成分共能解釋多少變異"><h2><span class="num">1.2</span>前兩個主成分共能解釋多少變異</h2><details class="refbox" open><summary>對應課程內容（5 處）</summary><ul><li><a href="ch11.html#s11-2-2">第 11 章 11.2・用 prcomp() 做 PCA</a>（prcomp）</li><li><a href="ch01.html#s1-2-5">第 1 章 1.2・常用的摘要函數</a>（summary、sum）</li><li><a href="ch01.html#s1-1-5">第 1 章 1.1・函數與說明文件</a>（round）</li><li><a href="ch11.html#s11-2-3">第 11 章 11.2・決定保留幾個主成分</a>（cumsum、screeplot）</li><li><a href="ch06.html#s6-3-3">第 6 章 6.3・殘差圖發現非線性</a>（abline）</li></ul></details><div class="box task"><span class="tag">題目</span><p>以 PCA 或 SPCA 分析，找出前二個主成份共能解釋多少變異？</p></div>
@@ -122,7 +126,7 @@
 <pre class="out"><code>## [1] 5</code></pre>
 <p>說明：</p>
 <ul>
-<li><code>prcomp(fin_x, center = TRUE, scale = TRUE)</code>：先把每個指標標準化（平均 0、標準差 1），再做 PCA。16 個指標得到 16 個主成分。</li>
+<li><code>prcomp(fin_x, center = TRUE, scale = TRUE)</code>：先把每個指標標準化（平均 0、<span class="gl" tabindex="0" role="button" data-g="標準差">標準差</span> 1），再做 PCA。16 個指標得到 16 個主成分。</li>
 <li><code>summary(pca)</code> 的 <code>Proportion of Variance</code> 是每個主成分解釋的比例，<code>Cumulative Proportion</code> 是累積比例。我也用 <code>sdev^2</code>（特徵值）自己算了一次，結果相同。</li>
 <li><strong>PC1 解釋 25.83%、PC2 解釋 21.95%，前兩個主成分合計解釋 47.78%</strong> 的變異。</li>
 <li>只有不到一半，因為財務指標涵蓋獲利、週轉、成長、償債等很多不同面向，兩個主成分裝不下。依其他準則：<ul>
@@ -154,7 +158,7 @@
 ## current_ratio         -0.206 -0.352 -0.280
 ## quick_rartio          -0.183 -0.368 -0.249
 ## debt_ratio             0.186  0.346  0.104</code></pre>
-<p>一次看 16 個數字不好找，把每個主成分的負荷量<strong>依絕對值由大到小</strong>排出前 5 名：</p>
+<p>一次看 16 個數字不好找，把每個主成分的<span class="gl" tabindex="0" role="button" data-g="負荷量">負荷量</span><strong>依絕對值由大到小</strong>排出前 5 名：</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">pc1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pca</span><span class="o">$</span><span class="n">rotation</span><span class="p">[,</span><span class="w"> </span><span class="m">1</span><span class="p">]</span>
 <a class="fnref" href="ch01.html#s1-1-5" title="課程：第 1 章 1.1・函數與說明文件"><span class="nf">round</span></a><span class="p">(</span><span class="n">pc1</span><span class="p">[</span><a class="fnref" href="ch01.html#s1-7" title="課程：第 1 章 1.7・排序與搜尋：sort、order、rank、which"><span class="nf">order</span></a><span class="p">(</span><a class="fnref" href="ch02.html#s2-1-1" title="課程：第 2 章 2.1・為什麼需要管線"><span class="nf">abs</span></a><span class="p">(</span><span class="n">pc1</span><span class="p">),</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)][</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">],</span><span class="w"> </span><span class="m">3</span><span class="p">)</span>
 </code></pre></div>
@@ -275,8 +279,10 @@
 <li>第一主成分中流動比率、速動比率是負的，代表獲利能力強的公司不一定把大量資金閒置在流動資產上；不過投資時仍應搭配第二主成分（償債能力）確認負債比率不要過高。</li>
 </ul>
 <div class="box paste"><span class="tag">可直接貼到作業</span><button class="copy" type="button">複製這段</button><div class="ptext"><p>第一主成分代表公司的獲利能力。將第一主成分的負荷量以 sort() 由大到小排列後可以看到，正向影響最大的是營業利益率（0.374）、ROA（0.372）與 ROE（0.351），其次是資產週轉率、淨值週轉率與現金再投資比率等，而負向影響最大的是營業費用率（-0.406）。我取出每間公司的第一主成分分數，以中位數將公司分為分數較高與較低的兩組比較，分數較高的一組 ROE 中位數為 15.2%、ROA 中位數為 9.3%、營業利益率中位數為 11.5%，而分數較低的一組分別只有 1.4%、1.2% 與 0.7%，營業費用率則以分數較高的一組較低。因此依第一主成分的結果，適合投資的是股東權益報酬率與資產報酬率高、營業利益率高且營業費用率低的公司，也就是本業獲利能力強、費用控制良好，並且資產週轉與現金再投資表現較佳的公司。不過第一主成分無法反映財務風險，實際投資時仍應搭配代表償債能力的第二主成分，避免選到負債比率過高的公司。</p></div></div></section>
-<nav class="pager"><a class="prev" href="hw03.html">← 作業 3</a><span></span></nav></main>
+<nav class="pager" aria-label="上一頁與下一頁"><a class="prev" href="hw03.html"><small>← 上一份</small>作業 3　飯店訂房取消預測與客群分析</a></nav></main>
+<footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=e581631e"></script>
-<script src="assets/site.js?v=ba35a458"></script>
+<script src="assets/search.js?v=e3a678b7"></script>
+<script src="assets/glossary.js?v=341d8161"></script>
+<script src="assets/site.js?v=ddb9f3f8"></script>
 </body></html>
