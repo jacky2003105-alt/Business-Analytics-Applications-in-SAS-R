@@ -693,6 +693,7 @@ b. Extend the function from (a) to also include a greeting message, such as "Hel
 </code></pre></div>
 <pre class="out"><code>## [1] 0.1655</code></pre>
 <p>理論值是 6/36 ≈ 0.1667，模擬一萬次的結果很接近。</p>
+<div class="box key"><span class="tag">重點</span><strong class="bt">老師說期末考會有這類題</strong><p>老師在第四部影片講解練習題時說，期末考「絕對會有」類似的題目：自己寫一個 function 模擬一次實驗，再用 <code>replicate()</code> 重複很多次估計機率，例如抽 5 張撲克牌、紅心數等於方塊數的機率（理論值約 0.255，老師模擬 1,000 次得 0.246），或魷魚遊戲丟彈珠怎麼玩才會贏。程式寫得醜沒關係，邏輯對、答案出得來就好；完整寫法見本節 Concept Check 的抽牌題。</p></div>
 <h3 id="s3-7-5"><code>do.call()</code>：把 list 展開成引數</h3>
 <div class="code runnable"><button class="copy" type="button" aria-label="複製程式碼">複製</button><button class="run" type="button" aria-label="在網頁上執行這段程式">▶ 執行</button><span class="lang">R</span><pre><code><span class="n">stFun</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
 <span class="nf">do.call</span><span class="p">(</span><span class="n">stFun</span><span class="p">,</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">          </span><span class="c1"># 等於 stFun(1, 2)</span>
@@ -765,7 +766,7 @@ b. Extend the function from (a) to also include a greeting message, such as "Hel
 <nav class="pager" aria-label="上一頁與下一頁"><a class="prev" href="ch02.html"><small>← 上一章</small>第 2 章　資料轉換與整理：tidyverse</a><a class="next" href="ch04.html"><small>下一章 →</small>第 4 章　機率分配</a></nav></main>
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=f1f7e863"></script>
+<script src="assets/search.js?v=106aa425"></script>
 <script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>
