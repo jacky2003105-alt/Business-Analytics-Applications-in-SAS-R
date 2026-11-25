@@ -116,7 +116,7 @@
 </tr>
 </tbody>
 </table>
-<p>一旦變成例 3 的矩陣，每篇文章就是一列、每個詞就是一個變數——和第 9 章的顧客資料、第 11 章的財務比率沒有兩樣，可以計算距離、分群、做 PCA。</p>
+<p>一旦變成例 3 的矩陣，每篇文章就是一列、每個詞就是一個變數——和<a class="xref" href="ch09.html">第 9 章</a>的顧客資料、<a class="xref" href="ch11.html">第 11 章</a>的財務比率沒有兩樣，可以計算距離、分群、做 PCA。</p>
 <h3 id="s12-1-2">商業應用與常見分析</h3>
 <table>
 <thead>
@@ -136,7 +136,7 @@
 </tr>
 <tr>
 <td>社群操作</td>
-<td>議題操作、社群網路分析（第 13 章）</td>
+<td>議題操作、社群網路分析（<a class="xref" href="ch13.html">第 13 章</a>）</td>
 </tr>
 <tr>
 <td>醫藥</td>
@@ -147,8 +147,8 @@
 <p>台灣有現成的輿情平台（OpView、意藍資訊、網路溫度計 DailyView）做的就是這些事。常見的分析方法：</p>
 <ul>
 <li><strong>關聯分析</strong>：詞彙之間的關係（<span class="gl" tabindex="0" role="button" data-g="相關係數">相關係數</span>、相似指數），例如「價格」常和「貴」一起出現。</li>
-<li><strong>分類</strong>（classification）：依使用者給的類別自動分類文件，例如把客訴分到「物流／品質／服務」，可用 naive Bayes、SVM、<span class="gl" tabindex="0" role="button" data-g="隨機森林">隨機森林</span>（第 10 章）。</li>
-<li><strong>集群分析</strong>（clustering）：依文件本身的相似性分群，不需要事先給類別（第 9 章）。</li>
+<li><strong>分類</strong>（classification）：依使用者給的類別自動分類文件，例如把客訴分到「物流／品質／服務」，可用 naive Bayes、SVM、<span class="gl" tabindex="0" role="button" data-g="隨機森林">隨機森林</span>（<a class="xref" href="ch10.html">第 10 章</a>）。</li>
+<li><strong>集群分析</strong>（clustering）：依文件本身的相似性分群，不需要事先給類別（<a class="xref" href="ch09.html">第 9 章</a>）。</li>
 </ul>
 <h3 id="s12-1-3">斷詞</h3>
 <p><strong>斷詞</strong>（word segmentation）是把句子切成一個一個「有意義的詞」：</p>
@@ -169,7 +169,7 @@
 </code></pre></div>
 <ul>
 <li><code>import(&quot;jieba&quot;)</code> 回傳一個 R 物件，Python 模組裡的<span class="gl" tabindex="0" role="button" data-g="函數">函數</span>用 <code>$</code> 取用：<code>jieba$cut()</code>、<code>jieba$add_word()</code>。</li>
-<li><code>jieba$cut()</code> 回傳的是 Python 的「迭代器」，要用 <code>iterate()</code> 一個一個取出、<code>unlist()</code> 攤平成字元<span class="gl" tabindex="0" role="button" data-g="向量">向量</span>。老師把這兩步包成一個自訂函數（第 3 章）：</li>
+<li><code>jieba$cut()</code> 回傳的是 Python 的「迭代器」，要用 <code>iterate()</code> 一個一個取出、<code>unlist()</code> 攤平成字元<span class="gl" tabindex="0" role="button" data-g="向量">向量</span>。老師把這兩步包成一個自訂函數（<a class="xref" href="ch03.html">第 3 章</a>）：</li>
 </ul>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">cut_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nf">unlist</span><span class="p">(</span><span class="nf">iterate</span><span class="p">(</span><span class="n">jieba</span><span class="o">$</span><span class="nf">cut</span><span class="p">(</span><span class="n">text</span><span class="p">)))</span>
@@ -272,7 +272,7 @@
 ##  9 一一      1
 ## 10 不        1
 ## # ℹ 89 more rows</code></pre>
-<p>兩個正規表達式（第 2 章 stringr）的意思：</p>
+<p>兩個正規表達式（<a class="xref" href="ch02.html">第 2 章</a> stringr）的意思：</p>
 <table>
 <thead>
 <tr>
@@ -620,7 +620,7 @@
 <span class="w">  </span><span class="nf">slice_max</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">with_ties</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
 <span class="w">  </span><span class="nf">ungroup</span><span class="p">()</span>
 </code></pre></div></div><div class="why"><p class="sh">解析</p><p>count() 依作詞者與詞計數，group_by(writer) 後 slice_max() 在每一組內取前 10 名。</p></div></div></article></section><h3 id="s12-6-1">從文字到分群與 PCA</h3>
-<p>把每首歌轉成文件–詞矩陣（一首歌一列、一個詞一欄），就能用第 9 章的分群與第 11 章的 PCA：</p>
+<p>把每首歌轉成文件–詞矩陣（一首歌一列、一個詞一欄），就能用<a class="xref" href="ch09.html">第 9 章</a>的分群與<a class="xref" href="ch11.html">第 11 章</a>的 PCA：</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">dtm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">all_words_clean</span><span class="w"> </span><span class="o">%&gt;%</span>
 <span class="w">  </span><span class="nf">count</span><span class="p">(</span><span class="n">document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">song</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span>
 <span class="w">  </span><span class="nf">pivot_wider</span><span class="p">(</span><span class="n">names_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">values_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">values_fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">   </span><span class="c1"># 長表 → 寬表，沒出現補 0</span>
@@ -643,7 +643,7 @@
 ##  8 歌7          0     0     0     0     0     0     0
 ##  9 歌8          0     0     0     0     0     0     0
 ## 10 歌9          0     1     0     0     0     0     0</code></pre>
-<p><code>pivot_wider()</code>（第 2 章）把「歌、詞、次數」的長表格攤成寬表格；某首歌沒出現的詞，<code>values_fill = 0</code> 補 0。</p>
+<p><code>pivot_wider()</code>（<a class="xref" href="ch02.html">第 2 章</a>）把「歌、詞、次數」的長表格攤成寬表格；某首歌沒出現的詞，<code>values_fill = 0</code> 補 0。</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">data.matrix</span><span class="p">(</span><span class="n">dtm</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="o">-</span><span class="n">document</span><span class="p">))</span><span class="w">   </span><span class="c1"># 轉成數值矩陣</span>
 <span class="nf">rownames</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dtm</span><span class="o">$</span><span class="n">document</span>
 <span class="n">X_scaled</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">scale</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w">                          </span><span class="c1"># 標準化</span>
@@ -693,7 +693,7 @@
 <span class="w">  </span><span class="nf">theme_bw</span><span class="p">()</span>
 </code></pre></div>
 <figure class="rfig"><a href="assets/fig/ch12-unnamed-chunk-34-1.png" target="_blank"><img src="assets/fig/ch12-unnamed-chunk-34-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
-<p>解讀時要小心：10 首歌、上千個詞，<strong>變數遠多於觀察值</strong>，而且大多數詞只在一首歌出現。分群結果主要反映「哪幾首歌的用詞特別不一樣」（例如英文很多的歌會被單獨分出去），不一定對應作詞者。文字資料的分群通常需要更多文件，並先用 TF-IDF 或 <code>removeSparseTerms()</code>（下一節）篩掉稀疏的詞。</p><section class="cc" id="cc-s12-6"><h3 class="cc-h">Concept Check：12.6 課堂實作：歌詞文字探勘</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s12-6-1" data-label="12.6 課堂實作：歌詞文字探勘 Q1"><div class="q-meta"><h4><a href="#q-s12-6-1">Q1</a></h4><span class="q-kind">簡答｜中</span><span class="q-title">文字分群的步驟</span></div><div class="q-text"><p>Describe the steps to cluster a set of documents (for example, song lyrics) using k-means in R.</p></div><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>說明用 k-means 對一組文件分群的步驟。</p></div><div class="ans"><strong>答案</strong><p>(1) Segment each document into words (jieba for Chinese, unnest_tokens for English) while keeping the document id. (2) Clean the tokens: remove blanks, punctuation, stop words, and possibly very rare words. (3) Count words by document and reshape to a document-term matrix with pivot_wider(values_fill = 0) (one row per document, one column per word). (4) Convert to a numeric matrix and standardize with scale(), or use TF-IDF weights. (5) Run kmeans() with set.seed() and nstart, choose k (elbow / silhouette, Chapter 9). (6) Interpret each cluster by its frequent or high TF-IDF words and compare with known labels such as the writer; PCA can be used to visualize the clusters in two dimensions.</p></div><div class="why"><p class="sh">解析</p><p>就是 12.6 節「從文字到分群與 PCA」的流程：斷詞→清理→DTM→標準化→kmeans→解讀。</p></div></div></article><article class="q" id="q-s12-6-2" data-key="D" data-label="12.6 課堂實作：歌詞文字探勘 Q2"><div class="q-meta"><h4><a href="#q-s12-6-2">Q2</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">TF-IDF 的直覺</span></div><div class="q-text"><p>The word "愛" appears often in every lyricist's songs. What happens to its TF-IDF?</p></div><ol class="opts"><li data-k="A"><b>(A)</b><span>It becomes very large, since the word appears many times</span></li><li data-k="B"><b>(B)</b><span>It becomes negative, since common words receive a penalty</span></li><li data-k="C"><b>(C)</b><span>It is unchanged, since TF-IDF only uses the raw term frequency</span></li><li data-k="D"><b>(D)</b><span>It becomes close to zero, since it appears in all documents</span></li></ol><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>「愛」在每位作詞者的歌裡都很常出現，它的 TF-IDF 會怎樣？</p></div><div class="ans"><strong>答案 (D)</strong><p>It becomes close to zero, since it appears in all documents</p></div><div class="why"><p class="sh">解析</p><p>IDF = log(文件總數 ÷ 含這個詞的文件數)。每份文件都有，比值是 1，log 1 = 0，TF-IDF 也是 0。TF-IDF 高的詞是「這份文件常用、其他文件少用」的代表詞。</p></div></div></article></section></section><section class="sec" id="s12-7" data-label="12.7 英文文字探勘：tidytext 與 tm"><h2><span class="num">12.7</span>英文文字探勘：tidytext 與 tm</h2><p>英文不用斷詞，但流程一樣：切成詞 → 清理 → 詞頻 → 視覺化／分群／情緒分析。</p>
+<p>解讀時要小心：10 首歌、上千個詞，<strong>變數遠多於觀察值</strong>，而且大多數詞只在一首歌出現。分群結果主要反映「哪幾首歌的用詞特別不一樣」（例如英文很多的歌會被單獨分出去），不一定對應作詞者。文字資料的分群通常需要更多文件，並先用 TF-IDF 或 <code>removeSparseTerms()</code>（<a class="xref" href="#s12-7">下一節</a>）篩掉稀疏的詞。</p><section class="cc" id="cc-s12-6"><h3 class="cc-h">Concept Check：12.6 課堂實作：歌詞文字探勘</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s12-6-1" data-label="12.6 課堂實作：歌詞文字探勘 Q1"><div class="q-meta"><h4><a href="#q-s12-6-1">Q1</a></h4><span class="q-kind">簡答｜中</span><span class="q-title">文字分群的步驟</span></div><div class="q-text"><p>Describe the steps to cluster a set of documents (for example, song lyrics) using k-means in R.</p></div><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>說明用 k-means 對一組文件分群的步驟。</p></div><div class="ans"><strong>答案</strong><p>(1) Segment each document into words (jieba for Chinese, unnest_tokens for English) while keeping the document id. (2) Clean the tokens: remove blanks, punctuation, stop words, and possibly very rare words. (3) Count words by document and reshape to a document-term matrix with pivot_wider(values_fill = 0) (one row per document, one column per word). (4) Convert to a numeric matrix and standardize with scale(), or use TF-IDF weights. (5) Run kmeans() with set.seed() and nstart, choose k (elbow / silhouette, Chapter 9). (6) Interpret each cluster by its frequent or high TF-IDF words and compare with known labels such as the writer; PCA can be used to visualize the clusters in two dimensions.</p></div><div class="why"><p class="sh">解析</p><p>就是 <a class="xref" href="#s12-6">12.6 節</a>「從文字到分群與 PCA」的流程：斷詞→清理→DTM→標準化→kmeans→解讀。</p></div></div></article><article class="q" id="q-s12-6-2" data-key="D" data-label="12.6 課堂實作：歌詞文字探勘 Q2"><div class="q-meta"><h4><a href="#q-s12-6-2">Q2</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">TF-IDF 的直覺</span></div><div class="q-text"><p>The word "愛" appears often in every lyricist's songs. What happens to its TF-IDF?</p></div><ol class="opts"><li data-k="A"><b>(A)</b><span>It becomes very large, since the word appears many times</span></li><li data-k="B"><b>(B)</b><span>It becomes negative, since common words receive a penalty</span></li><li data-k="C"><b>(C)</b><span>It is unchanged, since TF-IDF only uses the raw term frequency</span></li><li data-k="D"><b>(D)</b><span>It becomes close to zero, since it appears in all documents</span></li></ol><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>「愛」在每位作詞者的歌裡都很常出現，它的 TF-IDF 會怎樣？</p></div><div class="ans"><strong>答案 (D)</strong><p>It becomes close to zero, since it appears in all documents</p></div><div class="why"><p class="sh">解析</p><p>IDF = log(文件總數 ÷ 含這個詞的文件數)。每份文件都有，比值是 1，log 1 = 0，TF-IDF 也是 0。TF-IDF 高的詞是「這份文件常用、其他文件少用」的代表詞。</p></div></div></article></section></section><section class="sec" id="s12-7" data-label="12.7 英文文字探勘：tidytext 與 tm"><h2><span class="num">12.7</span>英文文字探勘：tidytext 與 tm</h2><p>英文不用斷詞，但流程一樣：切成詞 → 清理 → 詞頻 → 視覺化／分群／情緒分析。</p>
 <h3 id="s12-7-1">tidytext：unnest_tokens()</h3>
 <p><strong>tidytext</strong> 套件（Silge &amp; Robinson《Text Mining with R》，tidytextmining.com）把文字處理成 tidyverse 的格式。老師用一首英文歌示範；這裡改用幾則自己寫的旅館評論（一樣的做法）：</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">reviews</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span>
@@ -943,11 +943,11 @@
 <span class="w">  </span><span class="nf">head</span><span class="p">(</span><span class="m">20</span><span class="p">)</span>
 
 <span class="nf">wordcloud2</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span>
-</code></pre></div></div><div class="why"><p class="sh">解析</p><p>就是 12.3～12.5 節的流程；head(20) 取前 20 名（count 已經 sort = TRUE 由大到小排好）。</p></div></div></article></section></section>
+</code></pre></div></div><div class="why"><p class="sh">解析</p><p>就是 12.3～<a class="xref" href="#s12-5">12.5 節</a>的流程；head(20) 取前 20 名（count 已經 sort = TRUE 由大到小排好）。</p></div></div></article></section></section>
 <nav class="pager" aria-label="上一頁與下一頁"><a class="prev" href="ch11.html"><small>← 上一章</small>第 11 章　維度縮減：PCA 與 SPCA</a><a class="next" href="ch13.html"><small>下一章 →</small>第 13 章　社群網路分析</a></nav></main>
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=f1f7e863"></script>
+<script src="assets/search.js?v=106aa425"></script>
 <script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>

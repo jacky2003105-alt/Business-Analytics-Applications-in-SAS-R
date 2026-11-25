@@ -132,7 +132,7 @@
 <figure class="rfig"><a href="assets/fig/ch05-unnamed-chunk-4-1.png" target="_blank"><img src="assets/fig/ch05-unnamed-chunk-4-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
 <div class="code runnable"><button class="copy" type="button" aria-label="複製程式碼">複製</button><button class="run" type="button" aria-label="在網頁上執行這段程式">▶ 執行</button><span class="lang">R</span><pre><code><span class="nf">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span>
 </code></pre></div>
-<p><code>boxplot(y ~ g)</code> 的 <code>~</code> 是 R 的<strong>公式</strong>（formula）寫法，讀作「y 依 g 分組」。第 6 章的<span class="gl" tabindex="0" role="button" data-g="迴歸">迴歸</span> <code>lm(y ~ x)</code> 也用同樣的寫法。</p>
+<p><code>boxplot(y ~ g)</code> 的 <code>~</code> 是 R 的<strong>公式</strong>（formula）寫法，讀作「y 依 g 分組」。<a class="xref" href="ch06.html">第 6 章</a>的<span class="gl" tabindex="0" role="button" data-g="迴歸">迴歸</span> <code>lm(y ~ x)</code> 也用同樣的寫法。</p>
 <h3 id="s5-2-2">怎麼讀盒鬚圖</h3>
 <p>盒鬚圖一次呈現五個數字：盒子下緣是第一四分位數 Q1、中間粗線是中位數、上緣是 Q3；盒子高度是四分位距 IQR = Q3 − Q1。兩端的鬚延伸到 1.5 倍 IQR 以內最遠的點，超出範圍的點單獨畫出，是可能的<strong>離群值</strong>。從上圖看得出 virginica 的花萼最長、setosa 最短，三組分布幾乎不重疊。</p>
 <h3 id="s5-2-3">散佈圖矩陣與分組平均</h3>
@@ -191,7 +191,7 @@
 <span class="w">       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Weight (1000 lbs)"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Miles per gallon"</span><span class="p">)</span>
 </code></pre></div>
 <figure class="rfig"><a href="assets/fig/ch05-unnamed-chunk-10-1.png" target="_blank"><img src="assets/fig/ch05-unnamed-chunk-10-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
-<p><code>geom_smooth(method = &quot;lm&quot;)</code> 畫出最小平方迴歸直線，灰色帶是 95% <span class="gl" tabindex="0" role="button" data-g="信賴區間">信賴區間</span>（第 6 章詳細說明）。</p>
+<p><code>geom_smooth(method = &quot;lm&quot;)</code> 畫出最小平方迴歸直線，灰色帶是 95% <span class="gl" tabindex="0" role="button" data-g="信賴區間">信賴區間</span>（<a class="xref" href="ch06.html">第 6 章</a>詳細說明）。</p>
 <h3 id="s5-3-4">折線圖、並排長條圖與圖例文字</h3>
 <p>時間資料常用 <code>geom_line()</code> 畫折線圖，依類別上色就會每一類一條線：</p>
 <div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="n">sales</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">data.frame</span><span class="p">(</span>
@@ -207,7 +207,7 @@
 </code></pre></div>
 <figure class="rfig"><a href="assets/fig/ch05-unnamed-chunk-11-1.png" target="_blank"><img src="assets/fig/ch05-unnamed-chunk-11-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
 <ul>
-<li>x 是日期型別（第 1 章 <code>as.Date()</code>）時，ggplot 會自動用時間刻度。</li>
+<li>x 是日期型別（<a class="xref" href="ch01.html">第 1 章</a> <code>as.Date()</code>）時，ggplot 會自動用時間刻度。</li>
 <li><code>color = store</code> 讓兩家店各畫一條線、自動配色並產生圖例。</li>
 <li><code>scale_color_discrete(labels = ...)</code> 只改<strong>圖例上顯示的文字</strong>，順序要和類別的排序（這裡是 A、B）一致；資料本身不變。</li>
 <li><code>labs()</code> 一次設定標題、x 軸、y 軸名稱，<code>color =</code> 改圖例標題。</li>
@@ -244,7 +244,7 @@
 <figure class="rfig"><a href="assets/fig/ch05-unnamed-chunk-14-1.png" target="_blank"><img src="assets/fig/ch05-unnamed-chunk-14-1.png" alt="R 程式產生的圖" loading="lazy"></a></figure>
 <ul>
 <li><code>cor(iris[, 1:4])</code>：只取四個數值欄算相關矩陣（第 5 欄 Species 是因子，不能算）。</li>
-<li>圓越大、顏色越深表示相關越強；藍色正相關、紅色負相關。花瓣長與花瓣寬相關高達 0.96，建模時同時放入會有<strong>共線性</strong>問題（第 6 章）。</li>
+<li>圓越大、顏色越深表示相關越強；藍色正相關、紅色負相關。花瓣長與花瓣寬相關高達 0.96，建模時同時放入會有<strong>共線性</strong>問題（<a class="xref" href="ch06.html">第 6 章</a>）。</li>
 </ul><section class="cc" id="cc-s5-3"><h3 class="cc-h">Concept Check：5.3 ggplot2 繪圖文法</h3><p class="cc-note">題目照期末考的題型自編（選擇、填空、簡答、寫程式），不是老師出的題目。選擇與填空用英文題幹，附中文題意。</p><article class="q" id="q-s5-3-1" data-key="A" data-label="5.3 ggplot2 繪圖文法 Q1"><div class="q-meta"><h4><a href="#q-s5-3-1">Q1</a></h4><span class="q-kind">選擇｜中</span><span class="q-title">aes 裡外</span></div><div class="q-text"><p>Which code makes <strong>all</strong> points blue?</p></div><ol class="opts"><li data-k="A"><b>(A)</b><span><code>ggplot(df, aes(x, y)) + geom_point(color = &quot;blue&quot;)</code></span></li><li data-k="B"><b>(B)</b><span><code>ggplot(df, aes(x, y)) + geom_point(aes(color = &quot;blue&quot;))</code></span></li><li data-k="C"><b>(C)</b><span><code>ggplot(df, aes(x, y, color = blue)) + geom_point()</code></span></li><li data-k="D"><b>(D)</b><span><code>ggplot(df, aes(x, y)) + geom_point(fill = blue)</code></span></li></ol><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>哪一行能讓所有點都是藍色？</p></div><div class="ans"><strong>答案 (A)</strong><code>ggplot(df, aes(x, y)) + geom_point(color = &quot;blue&quot;)</code></div><div class="why"><p class="sh">解析</p><p>固定的顏色要寫在 <code>aes()</code> 外面。(B) 把 "blue" 當成變數值，點會是預設配色並多一個圖例；(C)(D) 的 blue 沒有引號，R 會去找叫 blue 的欄位或物件。</p></div></div></article><article class="q" id="q-s5-3-2" data-key="B" data-label="5.3 ggplot2 繪圖文法 Q2"><div class="q-meta"><h4><a href="#q-s5-3-2">Q2</a></h4><span class="q-kind">選擇｜易</span><span class="q-title">ggplot 的組圖方式</span></div><div class="q-text"><p>In ggplot2, which symbol is used to add layers such as geoms and labels to a plot?</p></div><ol class="opts"><li data-k="A"><b>(A)</b><span><code>%&gt;%</code></span></li><li data-k="B"><b>(B)</b><span><code>+</code></span></li><li data-k="C"><b>(C)</b><span><code>&amp;</code></span></li><li data-k="D"><b>(D)</b><span><code>~</code></span></li></ol><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>ggplot2 用哪個符號疊加圖層？</p></div><div class="ans"><strong>答案 (B)</strong><code>+</code></div><div class="why"><p class="sh">解析</p><p>ggplot2 用 <code>+</code> 疊加圖層；<code>%&gt;%</code> 是 dplyr 的管線。常見錯誤是在 ggplot 的圖層之間用了 <code>%&gt;%</code>。<code>~</code> 用在 facet 與公式。</p></div></div></article><article class="q" id="q-s5-3-3" data-label="5.3 ggplot2 繪圖文法 Q3"><div class="q-meta"><h4><a href="#q-s5-3-3">Q3</a></h4><span class="q-kind">填空｜中</span><span class="q-title">分組畫小圖</span></div><div class="q-text"><p>To split a scatter plot into separate panels for each value of a categorical variable <code>cyl</code>, add <code>+ ________(~ cyl)</code>.</p></div><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>要依類別變數 cyl 把散佈圖切成多個小圖，要加上哪個函數？</p></div><div class="ans"><strong>答案</strong><code>facet_wrap</code></div><div class="why"><p class="sh">解析</p><p><code>facet_wrap(~ cyl)</code>；兩個變數排成格子用 <code>facet_grid(a ~ b)</code>。</p></div></div></article><article class="q" id="q-s5-3-4" data-label="5.3 ggplot2 繪圖文法 Q4"><div class="q-meta"><h4><a href="#q-s5-3-4">Q4</a></h4><span class="q-kind">寫程式｜中</span><span class="q-title">散佈圖加迴歸線</span></div><div class="q-text"><p>Using <code>mtcars</code>, draw a scatter plot of <code>hp</code> (x) against <code>mpg</code> (y), color the points by the number of cylinders <code>cyl</code> treated as a category, and add a linear regression line for all cars.</p></div><button class="toggle" type="button" aria-expanded="false">顯示解答</button><div class="sol" hidden><div class="zh"><p class="sh">中文題意</p><p>畫 hp 對 mpg 的散佈圖，點依 cyl（當成類別）上色，並加上一條整體的迴歸直線。</p></div><div class="ans"><strong>答案</strong><div class="code"><button class="copy" type="button" aria-label="複製程式碼">複製</button><span class="lang">R</span><pre><code><span class="nf">ggplot</span><span class="p">(</span><span class="n">mtcars</span><span class="p">,</span><span class="w"> </span><span class="nf">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hp</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mpg</span><span class="p">))</span><span class="w"> </span><span class="o">+</span>
 <span class="w">  </span><span class="nf">geom_point</span><span class="p">(</span><span class="nf">aes</span><span class="p">(</span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">factor</span><span class="p">(</span><span class="n">cyl</span><span class="p">)),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
 <span class="w">  </span><span class="nf">geom_smooth</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"lm"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
@@ -347,7 +347,7 @@
 <tr>
 <td>最小–最大 min-max</td>
 <td>\(\dfrac{x-\min}{\max-\min}\)</td>
-<td>縮到 0～1（第 3 章的 <code>scalefnc()</code>）</td>
+<td>縮到 0～1（<a class="xref" href="ch03.html">第 3 章</a>的 <code>scalefnc()</code>）</td>
 </tr>
 </tbody>
 </table>
@@ -572,7 +572,7 @@
 <nav class="pager" aria-label="上一頁與下一頁"><a class="prev" href="ch04.html"><small>← 上一章</small>第 4 章　機率分配</a><a class="next" href="ch06.html"><small>下一章 →</small>第 6 章　迴歸分析</a></nav></main>
 <footer class="site-foot"><span>商業分析：R｜課程筆記</span></footer>
 <script src="assets/katex/katex.min.js"></script><script src="assets/katex/auto-render.min.js"></script>
-<script src="assets/search.js?v=f1f7e863"></script>
+<script src="assets/search.js?v=106aa425"></script>
 <script src="assets/glossary.js?v=ed8c7487"></script>
 <script src="assets/site.js?v=484e1572"></script>
 </body></html>
